@@ -1,0 +1,129 @@
+<Window x:Class="QuotaGlass.Widget.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:QuotaGlass.Widget.Controls"
+        xmlns:vm="clr-namespace:QuotaGlass.Widget.ViewModels"
+        Title="QuotaGlass"
+        Width="340"
+        SizeToContent="Height"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        WindowStartupLocation="Manual"
+        Left="40"
+        Top="40">
+
+    <Window.Resources>
+        <Style x:Key="HitButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Card.MutedText}" />
+            <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
+                                <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Style="{StaticResource WindowChromeBorder}"
+            MouseLeftButtonDown="OnChromeMouseDown">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.55" Color="Black" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--  Title bar  -->
+            <Grid Grid.Row="0" Margin="2,0,2,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource HeaderText}"
+                           Text="QuotaGlass"
+                           VerticalAlignment="Center" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="–" Style="{StaticResource HitButton}" Click="OnMinimizeClick" ToolTip="Minimize" />
+                    <Button Content="×" Style="{StaticResource HitButton}" Click="OnCloseClick" ToolTip="Hide widget" />
+                </StackPanel>
+            </Grid>
+
+            <!--  Bucket cards  -->
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Buckets}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:BucketViewModel}">
+                        <Border Style="{StaticResource CardBorder}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!--  Ring with center percent overlay  -->
+                                <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0">
+                                    <c:RadialRing Percent="{Binding Percent}"
+                                                  Thickness="9"
+                                                  TrackBrush="{StaticResource Brush.Ring.Track}"
+                                                  SafeBrush="{StaticResource Brush.Ring.Safe}"
+                                                  WarnBrush="{StaticResource Brush.Ring.Warn}"
+                                                  DangerBrush="{StaticResource Brush.Ring.Danger}" />
+                                    <TextBlock Style="{StaticResource RingCenter}" Text="{Binding TimeUntilResetLabel}" />
+                                </Grid>
+
+                                <!--  Labels  -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource HeaderText}">
+                                        <Run Text="{Binding Provider, Mode=OneWay}" />
+                                        <Run Text=" — " />
+                                        <Run Text="{Binding Label, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource SubText}" Margin="0,2,0,0" Text="{Binding PercentLabel}" />
+                                    <TextBlock Style="{StaticResource SubText}" Text="{Binding ResetAtLabel}" />
+                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" Text="{Binding SourceLabel}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!--  Status strip  -->
+            <TextBlock Grid.Row="2"
+                       Style="{StaticResource MutedText}"
+                       Margin="2,4,2,0"
+                       Text="{Binding StatusText}" />
+        </Grid>
+    </Border>
+</Window>

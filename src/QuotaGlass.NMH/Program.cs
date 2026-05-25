@@ -1,0 +1,53 @@
+using QuotaGlass.NMH;
+using QuotaGlass.Shared;
+
+AppPaths.EnsureCreated();
+Logger.Init(Path.Combine(AppPaths.LogsDir, $"nmh-{DateTime.Now:yyyy-MM-dd}.log"));
+
+if (args.Length > 0)
+{
+    switch (args[0].ToLowerInvariant())
+    {
+        case "--register":
+            return HostRegistrar.Register();
+        case "--unregister":
+            return HostRegistrar.Unregister();
+        case "--version":
+            Console.Error.WriteLine($"QuotaGlass.NMH {typeof(Program).Assembly.GetName().Version}");
+            return 0;
+        case "--help" or "-h" or "/?":
+            PrintHelp();
+            return 0;
+    }
+}
+
+// Default: act as a native messaging host. Chrome / Edge / Firefox launch us
+// with the calling origin as args[0] (e.g. "chrome-extension://abcdef.../" ).
+var callerOrigin = args.Length > 0 ? args[0] : "(no-origin)";
+Logger.Info($"NMH started, caller={callerOrigin}, pid={Environment.ProcessId}");
+
+try
+{
+    var pump = new MessagePump(callerOrigin);
+    return await pump.RunAsync();
+}
+catch (Exception ex)
+{
+    Logger.Error("Fatal in MessagePump", ex);
+    return 2;
+}
+
+static void PrintHelp()
+{
+    Console.Error.WriteLine("""
+        QuotaGlass.NMH — native messaging host for the AI-Usage_Tracker extension.
+
+        Usage:
+          QuotaGlass.NMH.exe                # run as native messaging host (stdin/stdout)
+          QuotaGlass.NMH.exe --register     # install registry keys + manifest for Chrome/Edge/Firefox
+          QuotaGlass.NMH.exe --unregister   # remove registry keys + manifest
+          QuotaGlass.NMH.exe --version      # print version and exit
+        """);
+}
+
+internal partial class Program;

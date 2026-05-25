@@ -1,0 +1,38 @@
+# Working / AI agent files — local only
+CLAUDE.md
+CODEX_CHANGELOG.md
+.claude/
+.codex/
+AGENTS.md
+
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Publish output + installer artifacts
+publish/
+dist/
+*.msi
+*.exe
+!installer/**/*.exe
+!assets/**/*.exe
+
+# Local test data
+snapshot.json
+*.local.json
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
