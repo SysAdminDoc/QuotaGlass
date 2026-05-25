@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using QuotaGlass.Shared;
@@ -14,7 +13,7 @@ namespace QuotaGlass.Widget.Views;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
-    private readonly TrayIconService _tray;
+    private readonly TrayCoordinator _tray;
     private TopMostEnforcer? _topMost;
 
     public MainWindow()
@@ -31,20 +30,7 @@ public partial class MainWindow : Window
         _vm = new MainViewModel(Dispatcher, alarms);
         DataContext = _vm;
 
-        _tray = new TrayIconService();
-        _tray.ShowRequested += (_, _) => { Show(); Activate(); _tray.OnVisibilityChanged(true); };
-        _tray.HideRequested += (_, _) => { Hide(); _tray.OnVisibilityChanged(false); };
-        _tray.RefreshRequested += (_, _) => { /* TODO N-15 settings: bump refresh now */ };
-        _tray.SettingsRequested += (_, _) => { Show(); Activate(); _vm.Settings.IsExpanded = true; };
-        _tray.CheckForUpdatesRequested += async (_, _) => await CheckForUpdatesAsync();
-        _tray.ResetPositionRequested += (_, _) => ResetWidgetPosition();
-        _tray.QuitRequested += (_, _) => System.Windows.Application.Current.Shutdown();
-
-        _vm.Buckets.CollectionChanged += (_, _) => RefreshTrayBadge();
-        _vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainViewModel.Buckets)) RefreshTrayBadge();
-        };
+        _tray = new TrayCoordinator(this, _vm, UpdatePrompt.CheckForUpdatesAsync, ResetWidgetPosition);
 
         Loaded += (_, _) =>
         {
@@ -65,16 +51,6 @@ public partial class MainWindow : Window
             _vm.Dispose();
         };
         IsVisibleChanged += (_, _) => _tray.OnVisibilityChanged(IsVisible);
-    }
-
-    private void RefreshTrayBadge()
-    {
-        double worst = 0;
-        foreach (var b in _vm.Buckets)
-        {
-            if (b.Percent > worst) worst = b.Percent;
-        }
-        _tray.UpdateBadge(worst);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -210,56 +186,21 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case Key.Apps:
-                ShowSnoozeMenu((UIElement)sender, vm);
+                BucketContextMenuService.Show((UIElement)sender, vm, _vm);
                 e.Handled = true;
                 break;
             case Key.F10 when (Keyboard.Modifiers & ModifierKeys.Shift) != 0:
-                ShowSnoozeMenu((UIElement)sender, vm);
+                BucketContextMenuService.Show((UIElement)sender, vm, _vm);
                 e.Handled = true;
                 break;
         }
-    }
-
-    private void ShowSnoozeMenu(UIElement target, BucketViewModel vm)
-    {
-        var bucketId = vm.Id;
-        if (string.IsNullOrEmpty(bucketId)) return;
-
-        var menu = new ContextMenu();
-        void Add(string header, TimeSpan duration)
-        {
-            var item = new MenuItem { Header = header };
-            item.Click += (_, _) => _vm.SnoozeBucket(bucketId, duration);
-            menu.Items.Add(item);
-        }
-        Add("Snooze 1 hour", TimeSpan.FromHours(1));
-        Add("Snooze 6 hours", TimeSpan.FromHours(6));
-        Add("Snooze 24 hours", TimeSpan.FromHours(24));
-
-        // R4-Q-09 — "until reset" uses the real ResetIso when we have one,
-        // otherwise falls back to 8 days (covers max weekly window + slack).
-        var untilReset = vm.NextResetLocal.HasValue
-            ? vm.NextResetLocal.Value.ToUniversalTime() - DateTimeOffset.UtcNow
-            : TimeSpan.FromDays(8);
-        if (untilReset < TimeSpan.FromMinutes(5)) untilReset = TimeSpan.FromMinutes(5);
-        Add("Snooze until reset", untilReset);
-
-        if (_vm.SettingsStore.Current.Alarms.SnoozedBucketsUntilUtc.ContainsKey(bucketId))
-        {
-            menu.Items.Add(new Separator());
-            var unsnooze = new MenuItem { Header = "Unsnooze" };
-            unsnooze.Click += (_, _) => _vm.UnsnoozeBucket(bucketId);
-            menu.Items.Add(unsnooze);
-        }
-        menu.PlacementTarget = target;
-        menu.IsOpen = true;
     }
 
     private void OnCardRightClicked(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: BucketViewModel vm } el)
         {
-            ShowSnoozeMenu(el, vm);
+            BucketContextMenuService.Show(el, vm, _vm);
         }
     }
 
@@ -287,36 +228,6 @@ public partial class MainWindow : Window
     // OnDismissSetup / OnRunRegisterClicked / OnOpenUrlFromTag moved into
     // SetupCardView in v0.9 — DataContext was Setup; handlers now live with
     // the UserControl that owns the buttons.
-
-    private async Task CheckForUpdatesAsync()
-    {
-        try
-        {
-            var update = await UpdateChecker.CheckAsync().ConfigureAwait(true);
-            if (update is null)
-            {
-                MessageBox.Show($"QuotaGlass v{UpdateChecker.CurrentVersion} is up to date.",
-                    "QuotaGlass", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var msg = $"A new version is available: v{update.LatestVersion}\n\n" +
-                      $"Current version: v{UpdateChecker.CurrentVersion}\n" +
-                      $"Download: {update.AssetName}\n\n" +
-                      "Install now? The app will restart automatically.";
-            var result = MessageBox.Show(msg, "QuotaGlass update",
-                MessageBoxButton.OKCancel, MessageBoxImage.Question);
-            if (result == MessageBoxResult.OK)
-            {
-                UpdateChecker.LaunchSelfReplace(update);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Update check failed: {ex.Message}", "QuotaGlass",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
 
     private void ResetWidgetPosition()
     {

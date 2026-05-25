@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **R5-N1** - Setup card literals now flow through `Resources/Strings.cs` via `x:Static`, proving the localization scaffold works from XAML before the full RESX migration.
 - **R5-N2** - `AlarmSchedulerTests` cover R1 fire-once dedup, snooze suppression, Focus Assist suppression, and U3/R3 interaction using an injectable toast sink, clock, and suppression predicate.
+- **MainWindow.xaml.cs split** - tray wiring, update prompting, and bucket snooze context menu logic now live in `TrayCoordinator`, `UpdatePrompt`, and `BucketContextMenuService`.
 
 ### Fixed
 

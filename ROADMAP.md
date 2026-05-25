@@ -1,8 +1,8 @@
 # Roadmap - pending work only
 
 **Last updated:** 2026-05-25
-**Current baseline:** v0.9.0 working tree, pending commit from `c945e0d`.
-**Verification baseline:** `dotnet test QuotaGlass.sln` passes with .NET SDK 9.0.314: 87 passed, 0 failed.
+**Current baseline:** v0.9.0 plus Unreleased v0.10 work on `main`.
+**Verification baseline:** `dotnet test QuotaGlass.sln` passes with .NET SDK 9.0.314: 91 passed, 0 failed.
 
 This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGELOG.md) by release and are intentionally not duplicated here. Background evidence lives in the research dossiers:
 
@@ -25,13 +25,7 @@ Resolved decisions are captured in [CHANGELOG.md](CHANGELOG.md): self-hosted upd
 - [ ] **P3 - N-20 screenshots.** Needs the widget running against representative data so `assets/screenshots/` can show real cards, settings, log panel, high contrast, and setup states.
 - [ ] **R5-N7 - CI-triggering PR.** Requires GitHub PR workflow execution rather than direct local commit/push.
 
-Blocked items do not stop autonomous execution; continue with the next unblocked task.
-
----
-
-## Phase 8 - v0.10.0 - scheduler tests + cleanup
-
-- [ ] **MainWindow.xaml.cs split.** Extract helper classes for tray wiring, update checks, and bucket context menu once tests are in place.
+Blocked items do not stop autonomous execution when unblocked tasks exist.
 
 ---
 
@@ -47,4 +41,4 @@ Blocked items do not stop autonomous execution; continue with the next unblocked
 
 ## Next Autonomous Pick
 
-Start with **MainWindow.xaml.cs split** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.
+No unblocked local implementation tasks remain. Resume with **R5-P0-02** when a real Claude Code OAuth environment is available, or promote one deferred product bet above if demand changes.
