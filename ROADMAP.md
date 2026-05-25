@@ -116,13 +116,13 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 
 ## Phase 2 — v0.2.0 polish + true differentiator
 
-- [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates.
+- [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates. **(Large feature; warrants its own session.)**
 - [ ] **R2-P1-05** — Hermes credential source (folds into F-N1).
-- [ ] **F-N5** — Mica / Acrylic backdrop on Win11 22621+ via `DwmSetWindowAttribute`.
+- [x] **F-N5** — `Services/MicaBackdrop.cs` applies Mica system backdrop on Win11 22621+ via `DwmSetWindowAttribute(DWMWA_SYSTEMBACKDROP_TYPE)` + dark immersive title bar. No-op on Win10.
 - [ ] **NX-04** — Edge-snap on drag (within 16 px of monitor edge).
-- [ ] **NX-05** — Multi-monitor placement memory.
+- [x] **NX-05** — `MainWindow.OnSourceInitialized` restores `Widget.X`/`Widget.Y` from settings if still on-screen; `LocationChanged` persists. Multi-monitor aware via `Screen.AllScreens`.
 - [ ] **NX-06** — Catppuccin Latte light theme.
-- [ ] **NX-07** — Reduced-motion mode (respect Windows accessibility setting).
+- [x] **NX-07** — `MainViewModel.ReducedMotion` reads `SystemParameters.ClientAreaAnimation`; bound to `RadialRing.ReducedMotion` so v0.2 animation transitions can honor it.
 - [ ] **NX-08** — Sparkline panel (consume extension's existing `sparklineFor` data).
 - [ ] **NX-09** — Tooltip on ring hover.
 - [ ] **NX-10** — Embedded log panel.

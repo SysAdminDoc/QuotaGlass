@@ -41,6 +41,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public SettingsStore SettingsStore { get; }
 
+    /// <summary>NX-07: bound by ring control. True when the OS user has
+    /// chosen to minimize animations.</summary>
+    public bool ReducedMotion =>
+        !System.Windows.SystemParameters.ClientAreaAnimation
+        || !System.Windows.SystemParameters.MenuAnimation;
+
     public string StatusText
     {
         get => _statusText;

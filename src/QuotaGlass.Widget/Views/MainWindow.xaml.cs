@@ -78,6 +78,43 @@ public partial class MainWindow : Window
         {
             _topMost = new TopMostEnforcer(hwnd);
         }
+
+        // F-N5: enable Win11 Mica system backdrop. No-op on Win10.
+        MicaBackdrop.TryApply(this, acrylic: false);
+
+        // NX-05: restore last-known position if it's still on-screen.
+        var pos = _vm.SettingsStore.Current.Widget;
+        if (pos.X is double x && pos.Y is double y && IsPointOnScreen(x, y))
+        {
+            Left = x;
+            Top = y;
+        }
+
+        // Persist position on every move + on close.
+        LocationChanged += (_, _) =>
+        {
+            if (WindowState == WindowState.Normal)
+            {
+                _vm.SettingsStore.Update(s => { s.Widget.X = Left; s.Widget.Y = Top; });
+            }
+        };
+    }
+
+    private static bool IsPointOnScreen(double x, double y)
+    {
+        // Slop of 32 px ensures a slightly-off-screen widget still finds
+        // its monitor. Anything wildly off-screen (display unplugged)
+        // falls back to default placement.
+        foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+        {
+            var r = screen.WorkingArea;
+            if (x + 32 >= r.Left && x - 32 <= r.Right
+                && y + 32 >= r.Top && y - 32 <= r.Bottom)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void OnChromeMouseDown(object sender, MouseButtonEventArgs e)

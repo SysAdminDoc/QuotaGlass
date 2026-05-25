@@ -136,6 +136,7 @@
                                 <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0" Opacity="{Binding StaleOpacity}">
                                     <c:RadialRing Percent="{Binding Percent}"
                                                   Thickness="9"
+                                                  ReducedMotion="{Binding DataContext.ReducedMotion, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                   TrackBrush="{StaticResource Brush.Ring.Track}"
                                                   SafeBrush="{StaticResource Brush.Ring.Safe}"
                                                   WarnBrush="{StaticResource Brush.Ring.Warn}"

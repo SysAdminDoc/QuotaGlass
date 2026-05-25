@@ -97,6 +97,24 @@ public sealed class RadialRing : FrameworkElement
         return new Size(side, side);
     }
 
+    /// <summary>
+    /// NX-07: when true, suppress all ring animations. Bound to
+    /// SystemParameters.ClientAreaAnimation / IsAnimationsEnabled in WPF.
+    /// Currently the ring is static (no animations), so the toggle is a
+    /// no-op today but reserved so v0.2+ ring transitions can honor it.
+    /// </summary>
+    public static readonly DependencyProperty ReducedMotionProperty = DependencyProperty.Register(
+        nameof(ReducedMotion),
+        typeof(bool),
+        typeof(RadialRing),
+        new FrameworkPropertyMetadata(false));
+
+    public bool ReducedMotion
+    {
+        get => (bool)GetValue(ReducedMotionProperty);
+        set => SetValue(ReducedMotionProperty, value);
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         var side = Math.Min(ActualWidth, ActualHeight);
