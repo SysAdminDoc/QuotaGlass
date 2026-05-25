@@ -69,10 +69,11 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] **R2-P1-03** — `Services/PaceCalculator` linear-extrapolates between consecutive snapshots; shown only when pace would exhaust before reset.
 - [x] **F-A14** — (already shipped in Batch 2 — listed here for completeness.)
 
-### Batch 5 — Tray + first-run
+### Batch 5 — Tray + first-run ✅
 
-- [ ] **F-N4** — System tray icon with right-click menu (Show/Hide/Refresh/Quit). `H.NotifyIcon.Wpf` package.
-- [ ] **F-N3** — Setup Checklist card in widget when snapshot is missing/stale > 24h: 3 steps (extension installed, NMH registered, first snapshot received).
+- [x] **F-N4** — `Services/TrayIconService.cs` uses WinForms `NotifyIcon` (no extra packages — enabled via `<UseWindowsForms>true</UseWindowsForms>` alongside WPF). Right-click menu: Show / Hide / Refresh / Settings… / Quit. Double-click toggles widget. Generates its own runtime tray icon with worst-bucket badge color (green<60<peach<85<red). First-run balloon tip.
+- [x] **F-N3** — `Services/HealthCheck.cs` probes registry + snapshot.json; `ViewModels/SetupCardViewModel.cs` polls every 2s; XAML setup card shows 3 steps with Install / Run --register / Help buttons. Card auto-collapses when all green.
+- [x] **F-N10** — ARM64 added to `RuntimeIdentifiers` (advance of Batch 8).
 
 ---
 

@@ -1,6 +1,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+// WPF types only — disambiguate after UseWindowsForms pulled System.Drawing in.
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Pen = System.Windows.Media.Pen;
+using Point = System.Windows.Point;
+using Size = System.Windows.Size;
 
 namespace QuotaGlass.Widget.Controls;
 

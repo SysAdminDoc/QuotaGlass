@@ -62,6 +62,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!--  Title bar  -->
@@ -82,8 +83,40 @@
                 </StackPanel>
             </Grid>
 
+            <!--  Setup checklist (F-N3) — visible only when something is unmet  -->
+            <Border Grid.Row="1"
+                    Style="{StaticResource CardBorder}"
+                    Visibility="{Binding Setup.IsVisible, Converter={StaticResource BoolToVisibility}}"
+                    Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource HeaderText}" Text="Setup" />
+                    <TextBlock Style="{StaticResource SubText}"
+                               Margin="0,6,0,2"
+                               Text="{Binding Setup.ExtensionStepLabel}" />
+                    <TextBlock Style="{StaticResource SubText}"
+                               Margin="0,0,0,2"
+                               Text="{Binding Setup.NmhStepLabel}" />
+                    <TextBlock Style="{StaticResource SubText}"
+                               Margin="0,0,0,6"
+                               Text="{Binding Setup.SnapshotStepLabel}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Install extension"
+                                Style="{StaticResource HitButton}"
+                                Tag="{Binding Setup.ExtensionInstallUrl}"
+                                Click="OnOpenUrlFromTag" />
+                        <Button Content="Run --register"
+                                Style="{StaticResource HitButton}"
+                                Click="OnRunRegisterClicked" />
+                        <Button Content="Help"
+                                Style="{StaticResource HitButton}"
+                                Tag="{Binding Setup.TroubleshootingUrl}"
+                                Click="OnOpenUrlFromTag" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!--  Bucket cards  -->
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding Buckets}">
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding Buckets}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:BucketViewModel}">
                         <Border Style="{StaticResource CardBorder}"
@@ -130,7 +163,7 @@
             </ItemsControl>
 
             <!--  Status strip  -->
-            <TextBlock Grid.Row="2"
+            <TextBlock Grid.Row="3"
                        Style="{StaticResource MutedText}"
                        Margin="2,4,2,0"
                        Text="{Binding StatusText}" />

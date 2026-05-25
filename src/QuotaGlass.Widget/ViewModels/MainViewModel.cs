@@ -35,6 +35,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     /// </summary>
     public ObservableCollection<BucketViewModel> Buckets { get; } = new();
 
+    public SetupCardViewModel Setup { get; }
+
     public string StatusText
     {
         get => _statusText;
@@ -59,9 +61,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public MainViewModel(Dispatcher dispatcher, AlarmScheduler? alarms = null)
     {
+        Setup = new SetupCardViewModel(dispatcher);
+
         _watcher = new SnapshotWatcher(dispatcher);
         _watcher.SnapshotChanged += OnSnapshot;
         _watcher.SnapshotChanged += (_, m) => _alarms?.OnSnapshot(m);
+        _watcher.SnapshotChanged += (_, _) => Setup.Refresh();
         _watcher.StatusChanged += (_, s) => StatusText = s;
         _alarms = alarms;
 
@@ -104,6 +109,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void Start()
     {
+        Setup.Start();
         _watcher.Start();
         _countdownTimer.Start();
         _alarms?.Start();
@@ -188,6 +194,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose()
     {
+        Setup.Stop();
         _alarms?.Stop();
         _countdownTimer.Stop();
         _watcher.Dispose();

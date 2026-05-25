@@ -7,7 +7,12 @@
     <RootNamespace>QuotaGlass.Widget</RootNamespace>
     <AssemblyName>QuotaGlass.Widget</AssemblyName>
     <UseWPF>true</UseWPF>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- WPF owns the message loop; WinForms is only here for NotifyIcon.
+         Suppress the analyzer that demands API-driven DPI setup. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <ApplicationIcon></ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>

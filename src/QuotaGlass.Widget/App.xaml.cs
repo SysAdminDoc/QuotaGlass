@@ -1,6 +1,7 @@
 using System.Windows;
 using QuotaGlass.Shared;
 using QuotaGlass.Widget.Services;
+using Application = System.Windows.Application;
 
 namespace QuotaGlass.Widget;
 
