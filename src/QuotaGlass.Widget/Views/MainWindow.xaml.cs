@@ -266,6 +266,8 @@ public partial class MainWindow : Window
 
     private void OnToggleLog(object sender, RoutedEventArgs e) => _vm.LogPanel.Toggle();
 
+    private void OnToggleCalendar(object sender, RoutedEventArgs e) => _vm.Calendar.Toggle();
+
     private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.Custom);
 
     private void OnPickResetWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.Reset);

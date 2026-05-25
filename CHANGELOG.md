@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.3.0 just shipped.
+Nothing yet — v0.4.0 just shipped.
+
+## [0.4.0] — 2026-05-25
+
+Insights + audio release. Closes the remaining Phase-3 backlog items
+that didn't depend on toast actions or named-pipe transport.
+
+### Added
+
+- **L-02** — Collapsible "Next 7 days" reset calendar inside the settings panel. Groups every bucket's `ResetIso` into per-local-day groups with "Today / Tomorrow / weekday" headers. ([ViewModels/CalendarViewModel.cs](src/QuotaGlass.Widget/ViewModels/CalendarViewModel.cs))
+- **L-07** — Plan auto-detection from reset cadence + bucket-kind expansion. Fills `ProviderSnapshot.Plan` when the extension didn't set it. Heuristics: Claude (`max-20x` / `max-5x` / `pro` / `free`), Codex (`plus` / `free`). ([Shared/PlanInference.cs](src/QuotaGlass.Shared/PlanInference.cs))
+- **L-09** — Anomaly / spike detection. A new `AnomalyDetector` in Shared flags samples that jump ≥3× the median delta of recent positive deltas (and ≥5 percentage points absolute). Wired as a new `U3` rule family inside `AlarmScheduler`; fires once per resetISO per bucket. ([Shared/AnomalyDetector.cs](src/QuotaGlass.Shared/AnomalyDetector.cs))
+- **MP3 / M4A / AAC / WMA support** for custom alarm sounds. WAV still routes through `SoundPlayer` for lowest latency; everything else routes through WPF `MediaPlayer` (Media Foundation). OpenFileDialog filter widened. No NAudio dependency. ([Services/ToastService.cs](src/QuotaGlass.Widget/Services/ToastService.cs))
+- **R3-P2-01 scaffold** — Multi-account identifier surfaced in bucket-card hover tooltip. `ProviderSnapshot.OrgId` / `AccountId` is rendered as the last-8-char tail ("…2c4f99a1") so multi-account users can disambiguate cards. Full side-by-side columns still wait for F-N1 to land on real multi-account data. ([ViewModels/BucketViewModel.cs](src/QuotaGlass.Widget/ViewModels/BucketViewModel.cs))
+
+### Added — tests
+
+- **7 new `PlanInferenceTests`** — covers each Claude / Codex heuristic branch plus the "already-set plan stays" and "empty bucket list returns null" edges.
+- **5 new `AnomalyDetectorTests`** — exercises sub-window size, steady growth, sudden burst, sub-threshold jump, reset-drop semantics.
+- `HistorySample` moved from Widget to Shared so it's reachable from unit tests without pulling WPF in.
+
+### Changed
+
+- README MP3/M4A wording reverted to "supported" (was "WAV-only, planned" in v0.1.1).
+
+### Known limitations carried forward
+
+- L-04 toast-actions (Snooze / Open buttons) — Toolkit-vs-COM-activator decision still deferred.
+- L-06 named-pipe NMH↔Widget transport — defer; 250 ms debounced FileSystemWatcher is acceptable.
+- L-10 provider plugin contract — needs a real second-provider use case to anchor the design.
+- L-12 NM-companion to keep extension SW alive — already mostly handled by `bridge.js` 25 s ping.
+- Manual screenshots for `assets/screenshots/` — still open.
 
 ## [0.3.0] — 2026-05-25
 

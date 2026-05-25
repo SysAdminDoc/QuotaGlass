@@ -199,7 +199,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         var dlg = new OpenFileDialog
         {
             Title = $"Pick alarm sound ({slot})",
-            Filter = "Audio (*.wav)|*.wav|All files (*.*)|*.*",
+            Filter = "Audio (*.wav;*.mp3;*.m4a;*.aac;*.wma)|*.wav;*.mp3;*.m4a;*.aac;*.wma|All files (*.*)|*.*",
             CheckFileExists = true,
         };
         if (dlg.ShowDialog() != true) return null;

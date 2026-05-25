@@ -86,15 +86,6 @@ public sealed class HistoryState
     public Dictionary<string, List<HistorySample>> Buckets { get; set; } = new();
 }
 
-public sealed class HistorySample
-{
-    [JsonPropertyName("ts")]
-    public DateTimeOffset Ts { get; set; }
-
-    [JsonPropertyName("percentUsed")]
-    public double PercentUsed { get; set; }
-}
-
 [JsonSerializable(typeof(HistoryState))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,

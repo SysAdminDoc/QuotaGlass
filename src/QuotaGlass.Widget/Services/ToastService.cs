@@ -1,6 +1,7 @@
 using System.IO;
 using System.Media;
 using System.Runtime.Versioning;
+using System.Windows.Media;
 using Windows.Data.Xml.Dom;
 using Windows.UI.Notifications;
 
@@ -73,20 +74,72 @@ public sealed class ToastService
         }
     }
 
+    // WPF MediaPlayer instances must be kept alive for the duration of
+    // playback; rooting them in this static list prevents GC mid-clip.
+    private static readonly List<MediaPlayer> _activePlayers = new();
+    private static readonly object _playerGate = new();
+
     private static void PlayWav(string path)
     {
         try
         {
-            // Background-load + async-play; toast fires immediately, sound
-            // catches up. SoundPlayer.Play is non-blocking and safe to call
-            // from any thread.
-            var player = new SoundPlayer(path);
-            player.Play();
+            var ext = Path.GetExtension(path);
+            // WAV: keep SoundPlayer (no Media Foundation dep, lowest-latency).
+            if (string.Equals(ext, ".wav", StringComparison.OrdinalIgnoreCase))
+            {
+                new SoundPlayer(path).Play();
+                return;
+            }
+
+            // MP3/M4A/anything-else: route through WPF MediaPlayer which
+            // calls Media Foundation. No NAudio dependency. Toast UI thread
+            // is the natural owner of MediaPlayer instances.
+            PlayMediaFoundation(path);
         }
         catch
         {
             // Audio playback failure must never break the visible toast.
         }
+    }
+
+    private static void PlayMediaFoundation(string path)
+    {
+        // MediaPlayer is thread-affine to a dispatcher; create it on the UI
+        // thread when available, otherwise spin up a transient one.
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null)
+        {
+            // Headless / no-app context (e.g. test harness) — no audio.
+            return;
+        }
+
+        dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                var player = new MediaPlayer();
+                lock (_playerGate) _activePlayers.Add(player);
+                player.MediaEnded += (_, _) => Release(player);
+                player.MediaFailed += (_, _) => Release(player);
+                player.Open(new Uri(path, UriKind.Absolute));
+                player.Play();
+            }
+            catch
+            {
+                // ignored
+            }
+        });
+    }
+
+    private static void Release(MediaPlayer player)
+    {
+        try
+        {
+            player.Stop();
+            player.Close();
+        }
+        catch { }
+        lock (_playerGate) _activePlayers.Remove(player);
     }
 
     private static string Escape(string s) => s

@@ -13,6 +13,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     private string? _paceLabel;
     private double _staleOpacity = 1.0;
     private IReadOnlyList<HistorySample> _sparkline = Array.Empty<HistorySample>();
+    private string? _accountLabel;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -60,6 +61,10 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>L-02 — exposed for CalendarViewModel grouping.</summary>
+    public DateTimeOffset? NextResetLocal =>
+        _model.ResetIso?.ToLocalTime();
+
     public string KindBadge => _model.Kind switch
     {
         "session" => "session",
@@ -101,6 +106,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
                 ResetAtLabel,
             };
             if (!string.IsNullOrEmpty(KindBadge)) parts.Add($"({KindBadge})");
+            if (!string.IsNullOrEmpty(_accountLabel)) parts.Add($"account: {_accountLabel}");
             return string.Join("\n", parts);
         }
     }
@@ -166,10 +172,11 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         Raise(nameof(StaleOpacity));
     }
 
-    public void Apply(string providerKey, Bucket bucket)
+    public void Apply(string providerKey, Bucket bucket, string? accountLabel = null)
     {
         _providerKey = providerKey;
         _model = bucket;
+        _accountLabel = accountLabel;
         _cachedTimeUntilResetLabel = null;
         Raise(nameof(Id));
         Raise(nameof(Label));
@@ -182,7 +189,16 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         Raise(nameof(ResetAtLabel));
         Raise(nameof(KindBadge));
         Raise(nameof(AnalyticsUrl));
+        Raise(nameof(AccountLabel));
+        Raise(nameof(HasAccountLabel));
+        Raise(nameof(HoverTooltip));
     }
+
+    /// <summary>R3-P2-01 scaffold — short account identifier (orgId/accountId
+    /// trimmed) so multi-account users can disambiguate cards. Empty when
+    /// the snapshot is single-account.</summary>
+    public string? AccountLabel => _accountLabel;
+    public bool HasAccountLabel => !string.IsNullOrEmpty(_accountLabel);
 
     public void TickCountdown()
     {

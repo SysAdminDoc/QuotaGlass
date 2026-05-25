@@ -49,6 +49,15 @@ public sealed class AlarmScheduler
     private SnapshotMessage? _latest;
     private readonly Dictionary<string, double> _lastPercentByBucket = new();
     private readonly Dictionary<string, DateTimeOffset?> _lastResetByBucket = new();
+    private readonly Dictionary<string, IReadOnlyList<HistorySample>> _historyByBucket = new();
+
+    /// <summary>L-09 — caller pushes latest history per bucket so the
+    /// scheduler can evaluate spike detection in lockstep with snapshots.</summary>
+    public void UpdateHistory(string bucketId, IReadOnlyList<HistorySample> samples)
+    {
+        if (string.IsNullOrEmpty(bucketId)) return;
+        _historyByBucket[bucketId] = samples;
+    }
 
     public TimeSpan[] Ladder { get; set; } = DefaultLadder;
     public double[] UsageThresholds { get; set; } = DefaultThresholds;
@@ -64,6 +73,9 @@ public sealed class AlarmScheduler
     /// Windows Focus Assist / DND / fullscreen game / presentation mode.
     /// Suppressed keys are still marked fired so they don't fire later.</summary>
     public bool RespectFocusAssist { get; set; } = true;
+    /// <summary>L-09 — when true, fire a U3 anomaly toast on detected burn
+    /// spikes. Caller-supplied history fed via <see cref="UpdateHistory"/>.</summary>
+    public bool AnomalyDetectionEnabled { get; set; } = true;
     public string? CustomWavPath { get; set; }
     public string? ResetWavPath { get; set; }
     public string? ZeroStateWavPath { get; set; }
@@ -156,6 +168,20 @@ public sealed class AlarmScheduler
                     FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at {bucket.PercentUsed:0}%",
                         $"Threshold {threshold:0}% reached. Resets {HumanReset(bucket)}.", CustomWavPath,
                         providerKey, bucket, $"U1-{threshold:0}");
+                }
+            }
+
+            // U3 — anomaly / spike. Fires once per resetISO per bucket.
+            if (AnomalyDetectionEnabled
+                && _historyByBucket.TryGetValue(bucket.Id, out var history))
+            {
+                var spike = QuotaGlass.Shared.AnomalyDetector.DetectSpike(history);
+                if (spike is not null)
+                {
+                    var spikeKey = $"{providerKey}-{bucket.Id}-U3-{Iso(bucket.ResetIso)}";
+                    FireOnce(spikeKey, $"{Human(providerKey)} {Human(bucket)} usage spike",
+                        $"Sudden jump to {bucket.PercentUsed:0}% — burn rate well above baseline.",
+                        CustomWavPath, providerKey, bucket, "U3");
                 }
             }
 

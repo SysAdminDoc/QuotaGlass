@@ -44,6 +44,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public LogPanelViewModel LogPanel { get; }
 
+    public CalendarViewModel Calendar { get; } = new();
+
     public SettingsStore SettingsStore { get; }
 
     /// <summary>NX-07: bound by ring control. True when the OS user has
@@ -178,9 +180,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         var state = message.State;
         if (state is null) return;
 
+        // L-07 — fill in best-effort plan label when the extension didn't.
+        if (state.Providers.Claude is { } cp) cp.Plan = PlanInference.Infer(cp);
+        if (state.Providers.Codex is { } xp) xp.Plan = PlanInference.Infer(xp);
+
         // Walk providers in a stable order so cards don't reshuffle on each
         // refresh. Within a provider, preserve the extension's bucket order.
-        var incoming = new List<(string Key, Bucket Bucket)>();
+        var incoming = new List<(string Key, Bucket Bucket, string? Account)>();
         AppendProvider(incoming, "claude", state.Providers.Claude);
         AppendProvider(incoming, "codex", state.Providers.Codex);
 
@@ -190,23 +196,26 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         var desiredOrder = new List<BucketViewModel>(incoming.Count);
         var now = DateTimeOffset.UtcNow;
-        foreach (var (key, bucket) in incoming)
+        foreach (var (key, bucket, account) in incoming)
         {
             seenIds.Add(bucket.Id);
             if (existingById.TryGetValue(bucket.Id, out var vm))
             {
-                vm.Apply(key, bucket);
+                vm.Apply(key, bucket, account);
             }
             else
             {
                 vm = new BucketViewModel();
-                vm.Apply(key, bucket);
+                vm.Apply(key, bucket, account);
             }
             vm.SetPace(_pace.Forecast(bucket.Id, bucket.PercentUsed, now, bucket.ResetIso));
             // R3-P2-02 — feed the durable history buffer that powers NX-08
             // sparklines. Dedupe by snapshot ts inside HistoryStore.
             _history.AppendSample(bucket.Id, message.Timestamp, bucket.PercentUsed);
-            vm.SetSparklineData(_history.Read(bucket.Id));
+            var hist = _history.Read(bucket.Id);
+            vm.SetSparklineData(hist);
+            // L-09 — keep AlarmScheduler's per-bucket history in lockstep.
+            _alarms?.UpdateHistory(bucket.Id, hist);
             desiredOrder.Add(vm);
         }
 
@@ -233,17 +242,28 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 Buckets.Move(currentIndex, i);
             }
         }
+
+        // L-02 — refresh the 7-day reset calendar from the latest snapshot.
+        Calendar.Rebuild(Buckets);
     }
 
-    private static void AppendProvider(List<(string Key, Bucket Bucket)> dst, string key, ProviderSnapshot? snap)
+    private static void AppendProvider(List<(string Key, Bucket Bucket, string? Account)> dst, string key, ProviderSnapshot? snap)
     {
         if (snap is null) return;
         if (snap.Buckets.Count == 0) return;
+        var account = ShortAccount(snap.OrgId ?? snap.AccountId);
         foreach (var bucket in snap.Buckets)
         {
             if (string.IsNullOrWhiteSpace(bucket.Id)) continue;
-            dst.Add((key, bucket));
+            dst.Add((key, bucket, account));
         }
+    }
+
+    private static string? ShortAccount(string? id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+        // Show last 8 chars; orgIds are UUIDs in practice, accountIds are long.
+        return id.Length <= 8 ? id : "…" + id[^8..];
     }
 
     private static string KeyOf(Bucket b) => b.Id;

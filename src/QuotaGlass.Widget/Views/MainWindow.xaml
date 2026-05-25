@@ -354,6 +354,40 @@
                                  BorderBrush="{StaticResource Brush.Card.Border}"
                                  ToolTip="e.g. curl -d \"%QG_PROVIDER% at %QG_PERCENT%%%\" https://ntfy.sh/your-topic" />
 
+                        <!-- L-02 — 7-day next-resets calendar (collapsed by default) -->
+                        <Button Style="{StaticResource HitButton}"
+                                Content="{Binding Calendar.ToggleLabel}"
+                                Click="OnToggleCalendar"
+                                HorizontalAlignment="Left"
+                                Margin="0,8,0,0" />
+                        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="6"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding Calendar.IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding Calendar.Days}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:CalendarDayViewModel}">
+                                        <StackPanel Margin="0,0,0,6">
+                                            <TextBlock Style="{StaticResource HeaderText}"
+                                                       Text="{Binding Header}"
+                                                       Margin="0,0,0,2" />
+                                            <ItemsControl ItemsSource="{Binding Resets}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:CalendarEntry}">
+                                                        <TextBlock Style="{StaticResource SubText}"
+                                                                   Text="{Binding Display}"
+                                                                   Margin="6,0,0,2" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
                         <!-- NX-10 embedded log panel (collapsed by default) -->
                         <Button Style="{StaticResource HitButton}"
                                 Content="{Binding LogPanel.ToggleLabel}"

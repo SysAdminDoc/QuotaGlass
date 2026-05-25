@@ -170,15 +170,15 @@ Pass 3 additions ✅ — all shipped in v0.2.0 (2026-05-25).
 ## Phase 3 — v0.3+
 
 - [x] **L-01** — Per-tier alarm sound (UI exposure for Reset / Zero-state slots).
-- [ ] **L-02** — 7-day "next resets" calendar view.
-- [ ] **L-04** — Action Center deep-links on toast buttons.
-- [ ] **L-06** — Named pipe between NMH and Widget (drops 250ms FileSystemWatcher latency to <10ms).
-- [ ] **L-07** — Plan auto-detection from reset cadence.
+- [x] **L-02** — 7-day "next resets" calendar view inside the settings panel.
+- [ ] **L-04** — Action Center deep-links on toast buttons (deferred; needs Toolkit-vs-COM-activator decision).
+- [ ] **L-06** — Named pipe between NMH and Widget (deferred; 250ms FileSystemWatcher is acceptable).
+- [x] **L-07** — Plan auto-detection — `Shared/PlanInference.cs` heuristic.
 - [x] **L-08** — Burn-rate pace marker on ring (lighter tick at projected exhaustion angle).
-- [ ] **L-09** — Anomaly / spike detection.
-- [ ] **L-10** — Provider plugin contract.
+- [x] **L-09** — Anomaly / spike detection (U3 rule family + median-baseline `AnomalyDetector`).
+- [ ] **L-10** — Provider plugin contract (deferred; needs a real second-provider use case).
 - [x] **F-N7** — Shell-command webhook on alarm fire (5 QG_* env vars + 5 s timeout).
-- [ ] **L-12** — Native messaging companion to keep extension SW alive (mostly handled by F-A4 already).
+- [ ] **L-12** — Native messaging companion to keep extension SW alive (already mostly handled by F-A4 25 s ping).
 
 ---
 
