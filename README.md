@@ -109,7 +109,7 @@ dotnet run --project src/QuotaGlass.Widget -- --inject-fake-snapshot
 dotnet test QuotaGlass.sln -c Release
 ```
 
-Covers atomic-write round-trip, schema versioning, extension-payload deserialization fidelity, JSON depth-bomb rejection, and unknown-field tolerance.
+37+ tests across 6 fixture files: `AtomicJsonFile`, `SchemaVersion`, `SnapshotSchema`, `LadderEvaluator` (R1 cold-start walk), `CredentialPoller` (F-N1 token classification + header parsing), `PlanInference` (plan auto-detect heuristics), `AnomalyDetector` (U3 spike detection).
 
 ## OSS landscape & why this exists
 

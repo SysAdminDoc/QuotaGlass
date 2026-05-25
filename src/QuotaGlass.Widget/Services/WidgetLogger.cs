@@ -14,14 +14,22 @@ public static class WidgetLogger
     private const int RetainDays = 14;
 
     private static readonly Lock Gate = new();
-    private static string? _path;
+    private static bool _initialized;
 
     public static void Init()
     {
-        var path = Path.Combine(AppPaths.LogsDir, $"widget-{DateTime.Now:yyyy-MM-dd}.log");
         try { Directory.CreateDirectory(AppPaths.LogsDir); } catch { }
-        _path = path;
+        _initialized = true;
         PruneOldFiles();
+    }
+
+    private static string? CurrentPath()
+    {
+        // R4-Q-04 — recompute per write so a widget running across midnight
+        // doesn't keep appending to yesterday's file.
+        return _initialized
+            ? Path.Combine(AppPaths.LogsDir, $"widget-{DateTime.Now:yyyy-MM-dd}.log")
+            : null;
     }
 
     public static void Info(string message) => Write("INFO", message, null);
@@ -38,14 +46,15 @@ public static class WidgetLogger
         System.Diagnostics.Debug.WriteLine(line);
 #endif
 
-        if (_path is null) return;
+        var path = CurrentPath();
+        if (path is null) return;
 
         try
         {
             lock (Gate)
             {
-                RotateIfNeeded();
-                File.AppendAllText(_path, line + Environment.NewLine);
+                RotateIfNeeded(path);
+                File.AppendAllText(path, line + Environment.NewLine);
             }
         }
         catch
@@ -54,27 +63,26 @@ public static class WidgetLogger
         }
     }
 
-    private static void RotateIfNeeded()
+    private static void RotateIfNeeded(string path)
     {
-        if (_path is null) return;
         try
         {
-            var info = new FileInfo(_path);
+            var info = new FileInfo(path);
             if (!info.Exists) return;
             if (info.Length < PerFileMaxBytes) return;
-            var rolled = _path + ".1";
+            var rolled = path + ".1";
             if (File.Exists(rolled)) File.Delete(rolled);
-            File.Move(_path, rolled);
+            File.Move(path, rolled);
         }
         catch { }
     }
 
     private static void PruneOldFiles()
     {
-        if (_path is null) return;
+        if (!_initialized) return;
         try
         {
-            var dir = Path.GetDirectoryName(_path);
+            var dir = AppPaths.LogsDir;
             if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
             var cutoff = DateTime.UtcNow.AddDays(-RetainDays);
             foreach (var file in Directory.EnumerateFiles(dir, "widget-*.log*"))

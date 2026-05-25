@@ -43,6 +43,13 @@ internal static class HostRegistrar
             Console.Error.WriteLine($"QuotaGlass.NMH registered for {HostName}");
             Console.Error.WriteLine($"  Chromium manifest: {manifestPath}");
             Console.Error.WriteLine($"  Firefox  manifest: {firefoxManifest}");
+
+            // R4-N4 — best-effort: if Claude Code / Codex / Hermes credential
+            // files are present, register a logon + 30-min Scheduled Task to
+            // run `--poll-credentials`. Users without the CLIs see this as a
+            // no-op (no stray task created).
+            ScheduledTaskRegistration.TryRegister(exePath, intervalMinutes: 30);
+
             return 0;
         }
         catch (Exception ex)
@@ -64,6 +71,9 @@ internal static class HostRegistrar
 
             TryDelete(AppPaths.NmhManifestFile);
             TryDelete(Path.Combine(AppPaths.LocalAppDataRoot, "nmh-manifest-firefox.json"));
+
+            // R4-N4 — remove the scheduled task if we ever registered it.
+            ScheduledTaskRegistration.TryUnregister();
 
             Logger.Info("unregistered NMH");
             Console.Error.WriteLine($"QuotaGlass.NMH unregistered.");

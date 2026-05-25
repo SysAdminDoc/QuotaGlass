@@ -23,6 +23,7 @@ public sealed class HistoryStore
     private readonly object _gate = new();
     private readonly string _path;
     private HistoryState _state;
+    private bool _pendingWrite;
 
     public HistoryStore() : this(Path.Combine(AppPaths.LocalAppDataRoot, "history.json")) { }
 
@@ -36,7 +37,8 @@ public sealed class HistoryStore
     /// <summary>
     /// Append a sample for one bucket. Caller passes the snapshot timestamp
     /// (the wire-level <c>ts</c> field) so duplicate writes from a single
-    /// snapshot are no-ops.
+    /// snapshot are no-ops. R4-P1-01 — does NOT write to disk; call
+    /// <see cref="Flush"/> once after a snapshot batch is processed.
     /// </summary>
     public void AppendSample(string bucketId, DateTimeOffset ts, double percentUsed)
     {
@@ -54,7 +56,21 @@ public sealed class HistoryStore
 
             samples.Add(new HistorySample { Ts = ts, PercentUsed = percentUsed });
             while (samples.Count > MaxSamplesPerBucket) samples.RemoveAt(0);
+            _pendingWrite = true;
+        }
+    }
 
+    /// <summary>
+    /// R4-P1-01 — persist all pending appends in a single atomic write.
+    /// Caller (MainViewModel.OnSnapshot) invokes this once per snapshot
+    /// batch instead of fsync'ing per bucket.
+    /// </summary>
+    public void Flush()
+    {
+        lock (_gate)
+        {
+            if (!_pendingWrite) return;
+            _pendingWrite = false;
             Save();
         }
     }

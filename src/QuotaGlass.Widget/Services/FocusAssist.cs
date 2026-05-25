@@ -28,16 +28,32 @@ public static class FocusAssist
     [DllImport("shell32.dll", SetLastError = true)]
     private static extern int SHQueryUserNotificationState(out UserNotificationState pquns);
 
+    // R4-Q-07 — cache for a few seconds so a snapshot pass with 6 buckets
+    // and 6 rule families (≈15+ FireOnce calls) doesn't make 15+ P/Invokes.
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(3);
+    private static UserNotificationState _cachedState;
+    private static DateTimeOffset _cachedAt = DateTimeOffset.MinValue;
+    private static readonly object _cacheGate = new();
+
     public static UserNotificationState QueryState()
     {
-        try
+        lock (_cacheGate)
         {
-            var hr = SHQueryUserNotificationState(out var state);
-            return hr == 0 ? state : UserNotificationState.Unknown;
-        }
-        catch
-        {
-            return UserNotificationState.Unknown;
+            if (DateTimeOffset.UtcNow - _cachedAt < CacheTtl)
+            {
+                return _cachedState;
+            }
+            try
+            {
+                var hr = SHQueryUserNotificationState(out var state);
+                _cachedState = hr == 0 ? state : UserNotificationState.Unknown;
+            }
+            catch
+            {
+                _cachedState = UserNotificationState.Unknown;
+            }
+            _cachedAt = DateTimeOffset.UtcNow;
+            return _cachedState;
         }
     }
 

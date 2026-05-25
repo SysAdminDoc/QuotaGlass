@@ -192,6 +192,18 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
 
     public void Toggle() => IsExpanded = !IsExpanded;
 
+    /// <summary>R4-Q-11 — restore every setting to the value Settings.CreateDefault()
+    /// emits. Keeps Widget.X/Y so the user's chosen position is preserved.</summary>
+    public void ResetToDefaults()
+    {
+        var fresh = Settings.CreateDefault();
+        // Preserve position so the widget doesn't jump back to (40,40).
+        fresh.Widget.X = _store.Current.Widget.X;
+        fresh.Widget.Y = _store.Current.Widget.Y;
+        fresh.Widget.HasShownFirstRunToast = _store.Current.Widget.HasShownFirstRunToast;
+        _store.Replace(fresh);
+    }
+
     public enum WavSlot { Custom, Reset, ZeroState }
 
     public string? PickWavFile(WavSlot slot = WavSlot.Custom)

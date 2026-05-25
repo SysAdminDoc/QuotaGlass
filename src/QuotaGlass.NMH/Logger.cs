@@ -6,14 +6,17 @@ internal static class Logger
     private const int RetainDays = 14;                         // delete daily files older than this
 
     private static readonly Lock Gate = new();
-    private static string? _path;
+    private static string? _logDir;
 
     public static void Init(string path)
     {
-        _path = path;
+        // R4-Q-04 — store only the directory; recompute the daily file path
+        // per write so a process running across midnight rolls into the next
+        // day's file naturally.
+        _logDir = Path.GetDirectoryName(path);
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            if (!string.IsNullOrEmpty(_logDir)) Directory.CreateDirectory(_logDir);
         }
         catch
         {
@@ -23,6 +26,12 @@ internal static class Logger
         // F-A10: prune ancient daily logs so multi-month users don't
         // accumulate dozens of MB of NMH transcripts.
         PruneOldFiles();
+    }
+
+    private static string? CurrentPath()
+    {
+        if (string.IsNullOrEmpty(_logDir)) return null;
+        return Path.Combine(_logDir, $"nmh-{DateTime.Now:yyyy-MM-dd}.log");
     }
 
     public static void Info(string message) => Write("INFO", message, null);
@@ -47,14 +56,15 @@ internal static class Logger
             // best-effort
         }
 
-        if (_path is null) return;
+        var path = CurrentPath();
+        if (path is null) return;
 
         try
         {
             lock (Gate)
             {
-                RotateIfNeeded();
-                File.AppendAllText(_path, line + Environment.NewLine);
+                RotateIfNeeded(path);
+                File.AppendAllText(path, line + Environment.NewLine);
             }
         }
         catch
@@ -63,19 +73,18 @@ internal static class Logger
         }
     }
 
-    private static void RotateIfNeeded()
+    private static void RotateIfNeeded(string path)
     {
-        if (_path is null) return;
         try
         {
-            var info = new FileInfo(_path);
+            var info = new FileInfo(path);
             if (!info.Exists) return;
             if (info.Length < PerFileMaxBytes) return;
 
             // Roll: foo.log -> foo.log.1 (overwrite any previous .1).
-            var rolled = _path + ".1";
+            var rolled = path + ".1";
             if (File.Exists(rolled)) File.Delete(rolled);
-            File.Move(_path, rolled);
+            File.Move(path, rolled);
         }
         catch
         {
@@ -85,10 +94,9 @@ internal static class Logger
 
     private static void PruneOldFiles()
     {
-        if (_path is null) return;
         try
         {
-            var dir = Path.GetDirectoryName(_path);
+            var dir = _logDir;
             if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
 
             var cutoff = DateTime.UtcNow.AddDays(-RetainDays);

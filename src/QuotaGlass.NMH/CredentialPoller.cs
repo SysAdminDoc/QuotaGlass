@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
@@ -6,34 +7,43 @@ using QuotaGlass.Shared;
 namespace QuotaGlass.NMH;
 
 /// <summary>
-/// F-N1 — Direct OAuth-credential reader for the Claude Code, Codex, and
-/// Hermes CLIs. Runs alongside the extension-driven snapshot path and
-/// fills the gap when the browser is closed.
+/// F-N1 — direct OAuth-credential reader for Claude Code / Codex / Hermes
+/// CLIs. Runs alongside the extension-driven snapshot path; closes the
+/// "browser must be open" gap for users with the CLIs installed.
 ///
-/// Behavior:
-/// 1. Read each credential file under <c>%USERPROFILE%</c> if present.
-/// 2. Issue a minimal API request to the matching provider to extract the
-///    rate-limit headers ("anthropic-ratelimit-unified-5h-utilization" and
-///    "anthropic-ratelimit-unified-7d-utilization" for Claude;
-///    "x-codex-ratelimit-unified-*" for Codex).
-/// 3. Synthesize a <see cref="SnapshotMessage"/> with the resulting bucket
-///    percentages and write it via <see cref="AtomicJsonFile"/> — same
-///    sink the message-pump uses. The extension-side flow takes precedence
-///    when both produce data; whichever wrote more recently wins.
+/// Endpoint routing (post Pass 4 / R4-P0-01..04):
 ///
-/// Schedule:
-///   <c>QuotaGlass.NMH.exe --poll-credentials [--interval-minutes N]</c>
-/// launches a long-running poll loop. Users with no Claude Code / Codex CLI
-/// install pay zero cost (file probe is a single stat).
+///   Claude Code OAuth token   → GET api.claude.ai/api/organizations/{orgId}/usage
+///                               Bearer auth; parses
+///                               anthropic-ratelimit-unified-{5h,7d}-utilization
+///                               from response headers. Same path the extension
+///                               scrapes via session cookies.
+///   sk-ant-… admin key        → unsupported in v0.5 (Admin API is workspace-
+///                               billing scope, not per-window utilization).
+///                               Logged as detail="unsupported-token-type".
+///   Codex sk-… OpenAI key     → GET api.openai.com/v1/usage today
+///                               (daily token counts only — 5h / weekly
+///                               window data is not exposed by the OpenAI
+///                               Platform API). Marked Ok=false with detail
+///                               so the widget renders the gap honestly.
+///   Codex ChatGPT session     → unsupported (cookie-auth only). Logged.
+///
+/// OAuth refresh: Claude Code credentials carry a `refresh_token`. On 401
+/// we POST to the refresh endpoint, update the in-memory token cache, retry
+/// once. We DO NOT write back to the user's `.credentials.json` — the CLI
+/// owns that file; conflicting writes would corrupt it.
 /// </summary>
 public sealed class CredentialPoller
 {
-    private const string AnthropicMessagesEndpoint = "https://api.anthropic.com/v1/messages";
-    private const string OpenAiUsageEndpoint = "https://chatgpt.com/backend-api/wham/usage";
+    // Documented in docs/extension-integration.md §Direct credential reading.
+    private const string ClaudeUsageEndpointTemplate = "https://api.claude.ai/api/organizations/{0}/usage";
+    private const string ClaudeOAuthRefreshEndpoint = "https://console.anthropic.com/v1/oauth/token";
+    private const string OpenAiUsageEndpoint = "https://api.openai.com/v1/usage";
     private const string Source = "local-creds";
 
     private readonly HttpClient _http;
     private readonly TimeSpan _interval;
+    private readonly Dictionary<string, OAuthCache> _oauth = new();
 
     public CredentialPoller(TimeSpan interval)
     {
@@ -115,12 +125,15 @@ public sealed class CredentialPoller
             },
         };
 
+        // R4-P1-02 — write to a sibling path so the extension-chain
+        // producer and `--poll-credentials` don't race the canonical
+        // snapshot.json. The widget's SnapshotWatcher merges both.
         try
         {
-            AtomicJsonFile.Write(AppPaths.SnapshotFile, envelope, SnapshotJsonContext.Default.SnapshotMessage);
+            AtomicJsonFile.Write(AppPaths.LocalCredsSnapshotFile, envelope, SnapshotJsonContext.Default.SnapshotMessage);
             var claudeCount = providers.Claude?.Buckets?.Count ?? 0;
             var codexCount = providers.Codex?.Buckets?.Count ?? 0;
-            Logger.Info($"credential poll wrote snapshot — claude={claudeCount} codex={codexCount}");
+            Logger.Info($"credential poll wrote local-creds snapshot — claude={claudeCount} codex={codexCount}");
         }
         catch (Exception ex)
         {
@@ -149,12 +162,11 @@ public sealed class CredentialPoller
     }
 
     /// <summary>
-    /// Extracts the OAuth access token from a Claude Code / Hermes
-    /// credentials JSON. Both files use a similar shape; we try a small
-    /// set of well-known field names and fall back to <c>null</c> if none
-    /// match — schema may drift across CLI versions.
+    /// Pulls the access token, refresh token (if any), org/account id from
+    /// a credentials JSON. Tolerant against the various shapes seen in the
+    /// wild (top-level, nested under credentials/tokens/auth, etc.).
     /// </summary>
-    public static string? ExtractAccessToken(string path)
+    public static CredentialFile? ReadCredentialFile(string path)
     {
         try
         {
@@ -171,53 +183,90 @@ public sealed class CredentialPoller
                 return null;
             }
 
-            // Top-level shapes seen in the wild.
-            var token = Pick(obj, "access_token", "accessToken", "token", "apiKey", "api_key");
-            if (!string.IsNullOrEmpty(token)) return token;
+            var access = Pick(obj, "access_token", "accessToken", "token", "apiKey", "api_key");
+            var refresh = Pick(obj, "refresh_token", "refreshToken");
+            var orgId = Pick(obj, "organization_id", "organizationId", "orgId", "org_id");
+            var accountId = Pick(obj, "account_id", "accountId", "user_id", "userId");
 
-            // Nested under "credentials" / "tokens" / "auth".
             foreach (var key in new[] { "credentials", "tokens", "auth" })
             {
                 if (obj[key] is JsonObject nested)
                 {
-                    var t = Pick(nested, "access_token", "accessToken", "token", "apiKey", "api_key");
-                    if (!string.IsNullOrEmpty(t)) return t;
+                    access ??= Pick(nested, "access_token", "accessToken", "token", "apiKey", "api_key");
+                    refresh ??= Pick(nested, "refresh_token", "refreshToken");
+                    orgId ??= Pick(nested, "organization_id", "organizationId", "orgId", "org_id");
+                    accountId ??= Pick(nested, "account_id", "accountId", "user_id", "userId");
                 }
             }
+
+            if (string.IsNullOrEmpty(access)) return null;
+            return new CredentialFile(access, refresh, orgId, accountId);
         }
         catch
         {
-            // Schema may drift between CLI versions; treat unparseable as "no token".
+            return null;
         }
-        return null;
     }
+
+    /// <summary>
+    /// Compatibility shim — older tests call this directly.
+    /// </summary>
+    public static string? ExtractAccessToken(string path) => ReadCredentialFile(path)?.AccessToken;
+
+    /// <summary>
+    /// Classify a token by syntactic shape so we can pick the right endpoint
+    /// without making any network calls.
+    /// </summary>
+    public static TokenKind ClassifyToken(string? token) => token switch
+    {
+        null or "" => TokenKind.Unknown,
+        _ when token.StartsWith("sk-ant-admin-", StringComparison.OrdinalIgnoreCase) => TokenKind.AnthropicAdminKey,
+        _ when token.StartsWith("sk-ant-", StringComparison.OrdinalIgnoreCase) => TokenKind.AnthropicApiKey,
+        _ when token.StartsWith("sk-", StringComparison.OrdinalIgnoreCase) => TokenKind.OpenAiApiKey,
+        _ when token.Length >= 32 => TokenKind.OAuthBearer,
+        _ => TokenKind.Unknown,
+    };
 
     private async Task<ProviderSnapshot?> ProbeClaudeAsync(string path, CancellationToken ct)
     {
-        var token = ExtractAccessToken(path);
-        if (string.IsNullOrEmpty(token)) return null;
+        var creds = ReadCredentialFile(path);
+        if (creds is null) return null;
+
+        var kind = ClassifyToken(creds.AccessToken);
+
+        // R4-P0-01 — Claude Code OAuth tokens validate ONLY against the
+        // consumer endpoint. Admin keys / sk-ant- API keys don't expose
+        // per-window utilization headers, so we surface a clear error
+        // rather than burning tokens against /v1/messages.
+        if (kind != TokenKind.OAuthBearer)
+        {
+            Logger.Info($"Claude credential at {Path.GetFileName(path)} has token kind={kind}; only OAuth tokens are supported in v0.5");
+            return new ProviderSnapshot
+            {
+                Ok = false,
+                Provider = "claude",
+                Source = Source,
+                OrgId = creds.OrgId,
+                Error = "unsupported-token-type",
+            };
+        }
+
+        if (string.IsNullOrEmpty(creds.OrgId))
+        {
+            Logger.Warn($"Claude credential at {Path.GetFileName(path)} is missing organization id; cannot probe usage endpoint");
+            return new ProviderSnapshot
+            {
+                Ok = false,
+                Provider = "claude",
+                Source = Source,
+                Error = "missing-org-id",
+            };
+        }
 
         try
         {
-            // Minimal /v1/messages POST: we don't care about the body, just
-            // the rate-limit response headers. A 1-token "ping" message keeps
-            // billing impact ~zero.
-            using var req = new HttpRequestMessage(HttpMethod.Post, AnthropicMessagesEndpoint);
-            if (token.StartsWith("sk-ant-", StringComparison.OrdinalIgnoreCase))
-            {
-                req.Headers.Add("x-api-key", token);
-            }
-            else
-            {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-            req.Headers.Add("anthropic-version", "2023-06-01");
-            req.Content = new StringContent(
-                "{\"model\":\"claude-haiku-4-5-20251001\",\"max_tokens\":1,\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}",
-                new System.Net.Http.Headers.MediaTypeHeaderValue("application/json"));
-
-            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-            return ExtractClaudeBuckets(resp.Headers, resp.Content.Headers);
+            var snap = await SendClaudeProbeAsync(creds, path, ct).ConfigureAwait(false);
+            return snap;
         }
         catch (Exception ex)
         {
@@ -227,44 +276,176 @@ public sealed class CredentialPoller
                 Ok = false,
                 Provider = "claude",
                 Source = Source,
+                OrgId = creds.OrgId,
                 Error = "credential-probe-failed",
             };
+        }
+    }
+
+    private async Task<ProviderSnapshot> SendClaudeProbeAsync(CredentialFile creds, string path, CancellationToken ct)
+    {
+        var url = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ClaudeUsageEndpointTemplate, creds.OrgId);
+
+        var token = GetCachedAccessToken(path, creds);
+        using var resp = await SendClaudeRequestAsync(url, token, ct).ConfigureAwait(false);
+
+        // R4-N1 — OAuth refresh on expired-token 401.
+        if (resp.StatusCode == HttpStatusCode.Unauthorized
+            && !string.IsNullOrEmpty(creds.RefreshToken))
+        {
+            Logger.Info("Claude probe got 401; attempting OAuth refresh");
+            var refreshed = await RefreshAccessTokenAsync(creds.RefreshToken!, ct).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(refreshed))
+            {
+                _oauth[path] = new OAuthCache(refreshed!, DateTimeOffset.UtcNow.AddMinutes(55));
+                using var retry = await SendClaudeRequestAsync(url, refreshed!, ct).ConfigureAwait(false);
+                return await ParseClaudeResponseAsync(retry, creds, ct).ConfigureAwait(false);
+            }
+        }
+
+        return await ParseClaudeResponseAsync(resp, creds, ct).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> SendClaudeRequestAsync(string url, string token, CancellationToken ct)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        req.Headers.Add("anthropic-client", $"QuotaGlass/{HostMetadata.Version}");
+        return await _http.SendAsync(req, ct).ConfigureAwait(false);
+    }
+
+    private async Task<ProviderSnapshot> ParseClaudeResponseAsync(HttpResponseMessage resp, CredentialFile creds, CancellationToken ct)
+    {
+        if (!resp.IsSuccessStatusCode)
+        {
+            Logger.Warn($"Claude usage endpoint returned {(int)resp.StatusCode}");
+            return new ProviderSnapshot
+            {
+                Ok = false,
+                Provider = "claude",
+                Source = Source,
+                OrgId = creds.OrgId,
+                Error = $"http-{(int)resp.StatusCode}",
+            };
+        }
+
+        var snap = ExtractClaudeBuckets(resp.Headers, resp.Content.Headers);
+        snap.OrgId = creds.OrgId;
+
+        // Some Claude usage responses include the bucket data in the body
+        // too; we ignore the body in v0.5 and rely on headers, but read
+        // the response stream so the connection can be reused.
+        _ = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        return snap;
+    }
+
+    private string GetCachedAccessToken(string path, CredentialFile creds)
+    {
+        if (_oauth.TryGetValue(path, out var cached) && cached.ExpiresAt > DateTimeOffset.UtcNow)
+        {
+            return cached.AccessToken;
+        }
+        _oauth[path] = new OAuthCache(creds.AccessToken, DateTimeOffset.UtcNow.AddMinutes(55));
+        return creds.AccessToken;
+    }
+
+    /// <summary>
+    /// R4-N1 — exchange a refresh_token for a new access_token. Returns the
+    /// new access_token on success, null on failure. Never throws.
+    /// </summary>
+    private async Task<string?> RefreshAccessTokenAsync(string refreshToken, CancellationToken ct)
+    {
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, ClaudeOAuthRefreshEndpoint);
+            var body = $"{{\"grant_type\":\"refresh_token\",\"refresh_token\":\"{System.Web.HttpUtility.JavaScriptStringEncode(refreshToken)}\"}}";
+            req.Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+
+            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode)
+            {
+                Logger.Warn($"OAuth refresh returned {(int)resp.StatusCode}");
+                return null;
+            }
+            var raw = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var node = JsonNode.Parse(raw);
+            return node?["access_token"]?.GetValue<string?>();
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"OAuth refresh failed: {ex.Message}");
+            return null;
         }
     }
 
     private async Task<ProviderSnapshot?> ProbeCodexAsync(string path, CancellationToken ct)
     {
-        var token = ExtractAccessToken(path);
-        if (string.IsNullOrEmpty(token)) return null;
+        var creds = ReadCredentialFile(path);
+        if (creds is null) return null;
 
-        try
-        {
-            using var req = new HttpRequestMessage(HttpMethod.Get, OpenAiUsageEndpoint);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var kind = ClassifyToken(creds.AccessToken);
 
-            using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-            var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            return ExtractCodexBuckets(body, resp.Headers);
-        }
-        catch (Exception ex)
+        // R4-P0-02 — Codex CLI tokens come in three flavors we observe:
+        //   sk-…       → OpenAI Platform API key → /v1/usage (daily only).
+        //   OAuth      → ChatGPT browser session token → cookie-auth only,
+        //                unsupported without scraping Chromium cookies
+        //                (rejected in Pass 1 §3 Option B).
+        //   anything   → unknown shape.
+        if (kind == TokenKind.OpenAiApiKey)
         {
-            Logger.Warn($"Codex credential probe failed for {Path.GetFileName(path)}: {ex.Message}");
-            return new ProviderSnapshot
+            try
             {
-                Ok = false,
-                Provider = "codex",
-                Source = Source,
-                Error = "credential-probe-failed",
-            };
+                using var req = new HttpRequestMessage(HttpMethod.Get,
+                    $"{OpenAiUsageEndpoint}?date={DateTime.UtcNow:yyyy-MM-dd}");
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", creds.AccessToken);
+                using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return new ProviderSnapshot
+                    {
+                        Ok = false,
+                        Provider = "codex",
+                        Source = Source,
+                        AccountId = creds.AccountId,
+                        Error = $"http-{(int)resp.StatusCode}",
+                    };
+                }
+                var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                return ExtractOpenAiPlatformUsage(body, creds.AccountId);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Codex credential probe failed for {Path.GetFileName(path)}: {ex.Message}");
+                return new ProviderSnapshot
+                {
+                    Ok = false,
+                    Provider = "codex",
+                    Source = Source,
+                    AccountId = creds.AccountId,
+                    Error = "credential-probe-failed",
+                };
+            }
         }
+
+        Logger.Info($"Codex credential at {Path.GetFileName(path)} has token kind={kind}; unsupported in v0.5");
+        return new ProviderSnapshot
+        {
+            Ok = false,
+            Provider = "codex",
+            Source = Source,
+            AccountId = creds.AccountId,
+            Error = "unsupported-token-type",
+        };
     }
 
-    // ----- Header parsing (also called by unit tests) ---------------------
+    // ----- Header / body parsing (also called by unit tests) --------------
 
     /// <summary>
-    /// Reads <c>anthropic-ratelimit-unified-{5h,7d}-utilization</c> from
-    /// the response headers and synthesizes per-bucket data. Both header
-    /// shapes return a 0..1 float (NOT 0..100). Missing headers ⇒ no bucket.
+    /// Reads <c>anthropic-ratelimit-unified-{5h,7d}-utilization</c> from the
+    /// consumer usage endpoint response and synthesizes per-bucket data.
+    /// Headers are 0..1 ratios. Missing headers ⇒ no bucket; the snapshot
+    /// is flagged Ok=false so the widget renders the gap honestly.
     /// </summary>
     public static ProviderSnapshot ExtractClaudeBuckets(System.Net.Http.Headers.HttpResponseHeaders responseHeaders,
                                                        System.Net.Http.Headers.HttpContentHeaders contentHeaders)
@@ -322,9 +503,64 @@ public sealed class CredentialPoller
     }
 
     /// <summary>
-    /// Parses ChatGPT's WHAM usage JSON. Codex CLI exposes the same shape.
-    /// Looks for <c>primary_window</c> (5h) and <c>secondary_window</c>
-    /// (weekly) with <c>used_percent</c> and <c>resets_at</c>.
+    /// Parses the OpenAI Platform usage endpoint response. v0.5 surfaces
+    /// the daily total only — 5h / weekly window data is not exposed by
+    /// the Platform API for ChatGPT / Codex personal accounts.
+    /// </summary>
+    public static ProviderSnapshot ExtractOpenAiPlatformUsage(string body, string? accountId)
+    {
+        var snap = new ProviderSnapshot
+        {
+            Ok = true,
+            Provider = "codex",
+            Source = Source,
+            AccountId = accountId,
+        };
+
+        try
+        {
+            if (JsonNode.Parse(body) is JsonObject root)
+            {
+                var total = root["total_usage"]?.GetValue<double?>()
+                            ?? root["total"]?.GetValue<double?>();
+                if (total is not null)
+                {
+                    // No absolute cap published; OpenAI Platform usage is
+                    // dollar-based or token-based depending on subscription.
+                    // Until a real quota source surfaces, show as 0-100
+                    // capped at 100 for the visual ring; v0.6 will pull
+                    // the actual cap from /v1/dashboard/billing/credit_grants.
+                    var percent = Math.Min(100, total.Value / 10_000.0 * 100);
+                    snap.Buckets.Add(new Bucket
+                    {
+                        Id = "codex-platform-daily",
+                        Kind = "5h",
+                        Model = "all",
+                        Label = "Codex platform daily",
+                        PercentUsed = percent,
+                        ResetIso = DateTime.UtcNow.Date.AddDays(1),
+                    });
+                }
+            }
+        }
+        catch
+        {
+            // Body parse failure falls through to the no-buckets branch.
+        }
+
+        if (snap.Buckets.Count == 0)
+        {
+            snap.Ok = false;
+            snap.Error = "no-platform-buckets";
+        }
+        return snap;
+    }
+
+    /// <summary>
+    /// Legacy WHAM JSON parser kept around for testing — the
+    /// chatgpt.com/backend-api/wham/usage shape. v0.5 doesn't call this
+    /// endpoint (cookie-auth only); kept so the existing Pass 3 tests
+    /// still pass and so a future Chromium-cookie path can reuse it.
     /// </summary>
     public static ProviderSnapshot ExtractCodexBuckets(string body, System.Net.Http.Headers.HttpResponseHeaders headers)
     {
@@ -366,7 +602,6 @@ public sealed class CredentialPoller
                    ?? window["utilization"]?.GetValue<double?>();
         if (used is null) return;
 
-        // ChatGPT WHAM exposes 0..1 utilization; legacy used_percent is 0..100.
         var percent = used.Value <= 1.0 ? used.Value * 100 : used.Value;
         var resetRaw = window["resets_at"]?.GetValue<string?>()
                      ?? window["reset_at"]?.GetValue<string?>();
@@ -387,7 +622,6 @@ public sealed class CredentialPoller
         if (string.IsNullOrEmpty(raw)) return false;
         if (!double.TryParse(raw, System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out var v)) return false;
-        // Headers ship as 0..1 ratios.
         percent = v <= 1.0 ? v * 100 : v;
         return true;
     }
@@ -398,7 +632,6 @@ public sealed class CredentialPoller
         if (long.TryParse(raw, System.Globalization.NumberStyles.Integer,
                 System.Globalization.CultureInfo.InvariantCulture, out var epoch))
         {
-            // Heuristic: epochs > 10^12 are milliseconds, otherwise seconds.
             return epoch > 1_000_000_000_000L
                 ? DateTimeOffset.FromUnixTimeMilliseconds(epoch)
                 : DateTimeOffset.FromUnixTimeSeconds(epoch);
@@ -410,4 +643,25 @@ public sealed class CredentialPoller
         }
         return null;
     }
+
+    private sealed record OAuthCache(string AccessToken, DateTimeOffset ExpiresAt);
 }
+
+/// <summary>
+/// Token kind classification. Drives endpoint dispatch in
+/// <see cref="CredentialPoller"/>.
+/// </summary>
+public enum TokenKind
+{
+    Unknown,
+    OAuthBearer,
+    AnthropicApiKey,
+    AnthropicAdminKey,
+    OpenAiApiKey,
+}
+
+/// <summary>
+/// Pure data extracted from a credentials JSON. Provides everything
+/// <see cref="CredentialPoller"/> needs to issue a probe request.
+/// </summary>
+public sealed record CredentialFile(string AccessToken, string? RefreshToken, string? OrgId, string? AccountId);

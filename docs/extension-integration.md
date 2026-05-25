@@ -168,6 +168,37 @@ The extension's scrapers emit these stable `id` values. The QuotaGlass widget MU
 
 ---
 
+## Direct credential reading (`--poll-credentials`)
+
+QuotaGlass v0.3.0+ ships an alternate snapshot producer: `QuotaGlass.NMH.exe --poll-credentials` runs as a long-lived process that reads OAuth tokens from Claude Code / Codex CLI / Hermes credential files, calls the relevant per-provider usage endpoint, and writes a synthesized `SnapshotMessage` to a sibling path that the widget merges with the extension-driven snapshot.
+
+### Token routing (v0.5+)
+
+| Credential file | Token shape | Endpoint | Notes |
+|---|---|---|---|
+| `~/.claude/.credentials.json` (Claude Code) | OAuth bearer | `GET https://api.claude.ai/api/organizations/{orgId}/usage` | Parses `anthropic-ratelimit-unified-{5h,7d}-utilization` from response headers. Same path the extension scrapes via session cookies — token-auth equivalent. R4-N1: refresh-token rotation on 401. |
+| `~/.hermes/auth.json` (Hermes orchestrator) | OAuth bearer | Same as above | Same Anthropic surface. |
+| `~/.claude/.credentials.json` carrying `sk-ant-…` | Anthropic API key | unsupported | Admin API is workspace-billing scope only; doesn't expose per-window data. Logged with `detail="unsupported-token-type"`. |
+| `~/.codex/auth.json` carrying `sk-…` | OpenAI API key | `GET https://api.openai.com/v1/usage?date=…` | Daily token count only; 5h / weekly windows are not exposed by the OpenAI Platform API. Bucket id `codex-platform-daily`. |
+| `~/.codex/auth.json` carrying ChatGPT session token | Browser session token | unsupported | Cookie-auth only; QuotaGlass does not scrape Chromium cookies (Pass 1 §3 Option B rejected). |
+
+### Output file
+
+The credential poller writes to `%LOCALAPPDATA%\QuotaGlass\snapshot.local-creds.json`, **not** the canonical `snapshot.json`. The widget's `SnapshotWatcher` watches both files and merges per-provider — extension data wins on overlap (richer per-model buckets), credential data fills gaps (Codex when browser is closed, etc.).
+
+### Scheduled-task auto-start
+
+`QuotaGlass.NMH.exe --register` (v0.5+) detects any of the three credential files and registers a per-user Scheduled Task `QuotaGlass.CredentialPoll` that runs at logon + every 30 min. `--unregister` removes it. The Scheduled Task XML uses Task Scheduler 1.2 schema (stable since Win7) via `schtasks.exe` shell-out — no NuGet dep.
+
+### CLI usage
+
+```
+QuotaGlass.NMH.exe --poll-credentials                       # default 30-min interval
+QuotaGlass.NMH.exe --poll-credentials --interval-minutes 15 # override interval (clamped 5..1440)
+```
+
+---
+
 ## Idempotency keys (notifications)
 
 Fire-once notification keys are constructed identically in extension and widget:

@@ -27,6 +27,7 @@ public static class ThemeService
         // Find and replace the theme dictionary (always the first merged one
         // per App.xaml). Keep Controls.xaml in place.
         var merged = app.Resources.MergedDictionaries;
+        var swapped = false;
         for (var i = 0; i < merged.Count; i++)
         {
             if (merged[i].Source is null) continue;
@@ -34,11 +35,21 @@ public static class ThemeService
             if (src.Contains("Catppuccin", StringComparison.OrdinalIgnoreCase))
             {
                 merged[i] = new ResourceDictionary { Source = sourceUri };
-                return;
+                swapped = true;
+                break;
             }
         }
 
         // Fallback: insert at index 0 if for some reason none was found.
-        merged.Insert(0, new ResourceDictionary { Source = sourceUri });
+        if (!swapped) merged.Insert(0, new ResourceDictionary { Source = sourceUri });
+
+        // R4-P0-03 — re-apply the Mica brush override if it was previously
+        // active. The dictionary swap above resets `Brush.Window.Background`
+        // to the new theme's full-alpha brush; without this, the Mica
+        // backdrop would silently regress to occluded.
+        if (MicaBackdrop.WasApplied)
+        {
+            MicaBackdrop.ApplyMicaBrushOverride();
+        }
     }
 }

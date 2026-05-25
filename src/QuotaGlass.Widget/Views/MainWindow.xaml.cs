@@ -234,7 +234,15 @@ public partial class MainWindow : Window
         Add("Snooze 1 hour", TimeSpan.FromHours(1));
         Add("Snooze 6 hours", TimeSpan.FromHours(6));
         Add("Snooze 24 hours", TimeSpan.FromHours(24));
-        Add("Snooze until reset", TimeSpan.FromDays(8));
+
+        // R4-Q-09 — "until reset" uses the real ResetIso when we have one,
+        // otherwise falls back to 8 days (covers max weekly window + slack).
+        var untilReset = vm.NextResetLocal.HasValue
+            ? vm.NextResetLocal.Value.ToUniversalTime() - DateTimeOffset.UtcNow
+            : TimeSpan.FromDays(8);
+        if (untilReset < TimeSpan.FromMinutes(5)) untilReset = TimeSpan.FromMinutes(5);
+        Add("Snooze until reset", untilReset);
+
         if (_vm.SettingsStore.Current.Alarms.SnoozedBucketsUntilUtc.ContainsKey(bucketId))
         {
             menu.Items.Add(new Separator());
@@ -267,6 +275,19 @@ public partial class MainWindow : Window
     private void OnToggleLog(object sender, RoutedEventArgs e) => _vm.LogPanel.Toggle();
 
     private void OnToggleCalendar(object sender, RoutedEventArgs e) => _vm.Calendar.Toggle();
+
+    private void OnResetSettings(object sender, RoutedEventArgs e)
+    {
+        var confirm = MessageBox.Show(
+            "Restore alarm ladder, thresholds, theme and other settings to defaults?\n\n"
+            + "Position, autostart, and first-run state are preserved.",
+            "QuotaGlass — reset settings",
+            MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        if (confirm == MessageBoxResult.OK)
+        {
+            _vm.Settings.ResetToDefaults();
+        }
+    }
 
     private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.Custom);
 

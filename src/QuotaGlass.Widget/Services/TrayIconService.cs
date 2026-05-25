@@ -44,19 +44,28 @@ public sealed class TrayIconService : IDisposable
         _showItem = new Forms.ToolStripMenuItem("Show widget", null, (_, _) => ShowRequested?.Invoke(this, EventArgs.Empty));
         _hideItem = new Forms.ToolStripMenuItem("Hide widget", null, (_, _) => HideRequested?.Invoke(this, EventArgs.Empty));
 
+        // R4-Q-06 — tray context menu organized into submenus so the
+        // top-level stays short. "Show/Hide" + "Settings…" stay at the
+        // top because they're the high-frequency actions; secondary
+        // commands collapse under "Window" and "Updates".
+        var windowSub = new Forms.ToolStripMenuItem("Window");
+        windowSub.DropDownItems.Add(new Forms.ToolStripMenuItem("Refresh now", null,
+            (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty)));
+        windowSub.DropDownItems.Add(new Forms.ToolStripMenuItem("Reset widget position", null,
+            (_, _) => ResetPositionRequested?.Invoke(this, EventArgs.Empty)));
+
+        var updatesSub = new Forms.ToolStripMenuItem("Updates");
+        updatesSub.DropDownItems.Add(new Forms.ToolStripMenuItem("Check for updates…", null,
+            (_, _) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty)));
+
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(_showItem);
         menu.Items.Add(_hideItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(new Forms.ToolStripMenuItem("Refresh now", null,
-            (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty)));
         menu.Items.Add(new Forms.ToolStripMenuItem("Settings…", null,
             (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty)));
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(new Forms.ToolStripMenuItem("Check for updates…", null,
-            (_, _) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty)));
-        menu.Items.Add(new Forms.ToolStripMenuItem("Reset widget position", null,
-            (_, _) => ResetPositionRequested?.Invoke(this, EventArgs.Empty)));
+        menu.Items.Add(windowSub);
+        menu.Items.Add(updatesSub);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(new Forms.ToolStripMenuItem("Quit QuotaGlass", null,
             (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty)));

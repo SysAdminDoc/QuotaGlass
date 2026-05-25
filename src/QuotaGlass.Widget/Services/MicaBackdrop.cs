@@ -16,6 +16,14 @@ namespace QuotaGlass.Widget.Services;
 [SupportedOSPlatform("windows10.0.17763.0")]
 public static class MicaBackdrop
 {
+    /// <summary>
+    /// R4-P0-03 — set when <see cref="TryApply"/> succeeds. ThemeService
+    /// queries this on every dictionary swap so the brush override gets
+    /// re-applied instead of silently regressing after a theme change.
+    /// </summary>
+    public static bool WasApplied { get; private set; }
+
+
     private enum BackdropType
     {
         Auto = 0,
@@ -57,23 +65,36 @@ public static class MicaBackdrop
             // thin-alpha variant so every consumer (chrome border included)
             // becomes transparent to Mica.
             window.Background = Brushes.Transparent;
-            try
-            {
-                var resources = Application.Current?.Resources;
-                if (resources is not null && resources.Contains("Brush.Window.MicaBackground"))
-                {
-                    resources["Brush.Window.Background"] = resources["Brush.Window.MicaBackground"];
-                }
-            }
-            catch
-            {
-                // Resource swap is purely cosmetic — never fail TryApply on this.
-            }
+            ApplyMicaBrushOverride();
+            WasApplied = true;
             return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// R4-P0-03 — swap the app-resource `Brush.Window.Background` to the
+    /// thin-alpha `Brush.Window.MicaBackground` so Mica is visible through
+    /// the WindowChromeBorder. Idempotent; called by both TryApply and
+    /// ThemeService.Apply (after a theme dictionary swap).
+    /// </summary>
+    public static void ApplyMicaBrushOverride()
+    {
+        try
+        {
+            var resources = Application.Current?.Resources;
+            if (resources is null) return;
+            if (resources.Contains("Brush.Window.MicaBackground"))
+            {
+                resources["Brush.Window.Background"] = resources["Brush.Window.MicaBackground"];
+            }
+        }
+        catch
+        {
+            // Resource swap is purely cosmetic — never crash on this.
         }
     }
 

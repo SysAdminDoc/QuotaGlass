@@ -103,6 +103,79 @@ public sealed class CredentialPollerTests : IDisposable
         Assert.Equal("no-rate-limit-headers", snap.Error);
     }
 
+    [Theory]
+    [InlineData("sk-ant-admin-abc", TokenKind.AnthropicAdminKey)]
+    [InlineData("sk-ant-oat01-xyz", TokenKind.AnthropicApiKey)]
+    [InlineData("sk-proj-xyz", TokenKind.OpenAiApiKey)]
+    [InlineData("oa_oauth_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TokenKind.OAuthBearer)]
+    [InlineData("short", TokenKind.Unknown)]
+    [InlineData(null, TokenKind.Unknown)]
+    [InlineData("", TokenKind.Unknown)]
+    public void ClassifyToken_dispatches_correctly(string? token, TokenKind expected)
+    {
+        Assert.Equal(expected, CredentialPoller.ClassifyToken(token));
+    }
+
+    [Fact]
+    public void ReadCredentialFile_extracts_oauth_token_and_org_id()
+    {
+        var path = Path.Combine(_tmpDir, "claude.json");
+        File.WriteAllText(path, """
+        {
+          "access_token": "oa_oauth_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "refresh_token": "rt_xyz",
+          "organization_id": "org-abc-123"
+        }
+        """);
+
+        var creds = CredentialPoller.ReadCredentialFile(path);
+        Assert.NotNull(creds);
+        Assert.StartsWith("oa_oauth_", creds!.AccessToken);
+        Assert.Equal("rt_xyz", creds.RefreshToken);
+        Assert.Equal("org-abc-123", creds.OrgId);
+    }
+
+    [Fact]
+    public void ReadCredentialFile_handles_nested_credentials_shape()
+    {
+        var path = Path.Combine(_tmpDir, "nested.json");
+        File.WriteAllText(path, """
+        {
+          "credentials": {
+            "access_token": "nested_token",
+            "refresh_token": "nested_refresh"
+          },
+          "organization_id": "org-nested"
+        }
+        """);
+
+        var creds = CredentialPoller.ReadCredentialFile(path);
+        Assert.NotNull(creds);
+        Assert.Equal("nested_token", creds!.AccessToken);
+        Assert.Equal("nested_refresh", creds.RefreshToken);
+        Assert.Equal("org-nested", creds.OrgId);
+    }
+
+    [Fact]
+    public void ExtractOpenAiPlatformUsage_synthesizes_daily_bucket()
+    {
+        const string body = """{"total_usage": 250}""";
+        using var resp = new HttpResponseMessage(HttpStatusCode.OK);
+
+        var snap = CredentialPoller.ExtractOpenAiPlatformUsage(body, accountId: "acct-1");
+        Assert.True(snap.Ok);
+        Assert.Single(snap.Buckets);
+        Assert.Equal("codex-platform-daily", snap.Buckets[0].Id);
+    }
+
+    [Fact]
+    public void ExtractOpenAiPlatformUsage_returns_error_when_body_empty()
+    {
+        var snap = CredentialPoller.ExtractOpenAiPlatformUsage("{}", accountId: null);
+        Assert.False(snap.Ok);
+        Assert.Equal("no-platform-buckets", snap.Error);
+    }
+
     [Fact]
     public void ExtractCodexBuckets_parses_wham_shape()
     {

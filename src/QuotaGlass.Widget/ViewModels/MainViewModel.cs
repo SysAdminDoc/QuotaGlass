@@ -48,8 +48,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public SettingsStore SettingsStore { get; }
 
-    /// <summary>NX-07: bound by ring control. True when the OS user has
-    /// chosen to minimize animations.</summary>
+    /// <summary>NX-07 / R4-Q-05 — bound by ring control. True when the OS
+    /// user has chosen to minimize animations. Re-evaluated whenever
+    /// <see cref="System.Windows.SystemParameters"/> raises a static change
+    /// notification so runtime accessibility-preference flips propagate.</summary>
     public bool ReducedMotion =>
         !System.Windows.SystemParameters.ClientAreaAnimation
         || !System.Windows.SystemParameters.MenuAnimation;
@@ -104,6 +106,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         {
             foreach (var b in Buckets) b.TickCountdown();
             UpdateStaleness();
+        };
+
+        // R4-Q-05 — runtime accessibility-preference flips propagate.
+        System.Windows.SystemParameters.StaticPropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(System.Windows.SystemParameters.ClientAreaAnimation)
+                or nameof(System.Windows.SystemParameters.MenuAnimation))
+            {
+                Raise(nameof(ReducedMotion));
+            }
         };
     }
 
@@ -218,6 +230,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _alarms?.UpdateHistory(bucket.Id, hist);
             desiredOrder.Add(vm);
         }
+
+        // R4-P1-01 — one fsync per snapshot batch instead of one per bucket.
+        _history.Flush();
 
         // Drop disappeared buckets.
         for (var i = Buckets.Count - 1; i >= 0; i--)

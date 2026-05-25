@@ -150,13 +150,23 @@ public sealed class AlarmScheduler
                     "Fresh quota available.", ResetWavPath, providerKey, bucket, "R2");
             }
 
-            // R3 — zero-state. Bucket reached or crossed 100%.
+            // R3 — zero-state. Bucket reached or crossed 100%. R4-Q-08 — if
+            // U3 (anomaly) just fired for the same reset window, suppress
+            // R3 so the user doesn't get a double-toast for one event.
             if (bucket.PercentUsed >= 100)
             {
                 var key = $"{providerKey}-{bucket.Id}-R3-{Iso(bucket.ResetIso)}";
-                FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at 100%",
-                    $"Window exhausted. Resets {HumanReset(bucket)}.", ZeroStateWavPath,
-                    providerKey, bucket, "R3");
+                var u3Key = $"{providerKey}-{bucket.Id}-U3-{Iso(bucket.ResetIso)}";
+                if (!_fired.HasFired(u3Key))
+                {
+                    FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at 100%",
+                        $"Window exhausted. Resets {HumanReset(bucket)}.", ZeroStateWavPath,
+                        providerKey, bucket, "R3");
+                }
+                else
+                {
+                    _fired.MarkFired(key); // mark fired-equivalent so the dedup is permanent
+                }
             }
 
             // U1 — threshold warnings (75 / 90 / 95).

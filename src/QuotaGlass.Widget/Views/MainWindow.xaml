@@ -343,6 +343,14 @@
                                          ToolTip="Ring turns red above this percentage." />
                             </StackPanel>
                         </Grid>
+                        <!-- R4-Q-11 — reset all settings (excluding position) to factory defaults -->
+                        <Button Style="{StaticResource HitButton}"
+                                Content="Reset settings to defaults"
+                                Click="OnResetSettings"
+                                HorizontalAlignment="Left"
+                                Margin="0,8,0,0"
+                                ToolTip="Restores alarm ladder, thresholds, theme, etc. to factory defaults. Position is preserved." />
+
                         <!-- F-N7 — shell-command webhook -->
                         <TextBlock Style="{StaticResource SubText}"
                                    Text="Webhook command on alarm fire (optional):"

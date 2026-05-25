@@ -7,7 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.4.0 just shipped.
+Nothing yet — v0.5.0 just shipped.
+
+## [0.5.0] — 2026-05-25
+
+Stabilization release. Closes every P0 / P1 bug Pass 4 ([RESEARCH_PASS_4.md](RESEARCH_PASS_4.md)) found in the v0.1.1..v0.4.0 work, plus 9 quick wins. F-N1 now targets the right endpoints and rotates OAuth tokens; the snapshot pipeline tolerates two producers without flicker; Mica survives a theme switch.
+
+### Fixed
+
+- **R4-P0-01** — F-N1 Claude probe now targets the consumer endpoint (`api.claude.ai/api/organizations/{orgId}/usage`) with the OAuth bearer extracted from `~/.claude/.credentials.json` instead of `api.anthropic.com/v1/messages`. The unified-5h / unified-7d rate-limit headers we parse are only emitted there. Token shape is classified via the new `ClassifyToken` and only OAuth tokens are sent — `sk-ant-…` and `sk-ant-admin-…` keys are surfaced with `detail="unsupported-token-type"` rather than burning tokens on the wrong endpoint. ([NMH/CredentialPoller.cs](src/QuotaGlass.NMH/CredentialPoller.cs))
+- **R4-P0-02** — F-N1 Codex probe now dispatches by token shape: `sk-…` OpenAI keys go to `api.openai.com/v1/usage` for daily-total data; ChatGPT browser session tokens are surfaced as `unsupported-token-type` (cookie auth, rejected in Pass 1 Option B). ([NMH/CredentialPoller.cs](src/QuotaGlass.NMH/CredentialPoller.cs))
+- **R4-P0-03** — `MicaBackdrop.WasApplied` flag + extracted `ApplyMicaBrushOverride` are now called by `ThemeService.Apply` after every dictionary swap. Mocha↔Latte switches no longer silently re-occlude Mica. ([Services/MicaBackdrop.cs](src/QuotaGlass.Widget/Services/MicaBackdrop.cs), [Services/ThemeService.cs](src/QuotaGlass.Widget/Services/ThemeService.cs))
+- **R4-P0-04** — F-N1 no longer sends a real `/v1/messages` "hi" ping per poll. The new consumer endpoint is `GET`-only header-extraction; zero token burn. (Subsumed by R4-P0-01.)
+- **R4-P1-01** — `HistoryStore.AppendSample` is in-memory only; new `Flush()` is invoked once per snapshot batch by `MainViewModel.OnSnapshot`. Cuts fsyncs from 4-6 per snapshot to 1. ([Services/HistoryStore.cs](src/QuotaGlass.Widget/Services/HistoryStore.cs), [ViewModels/MainViewModel.cs](src/QuotaGlass.Widget/ViewModels/MainViewModel.cs))
+- **R4-P1-02** — `CredentialPoller` writes to a sibling `snapshot.local-creds.json`; `SnapshotWatcher.Merge` reconciles both producers (extension wins on overlap, creds fills gaps). Bucket cards no longer shimmer when both paths run. New `AppPaths.LocalCredsSnapshotFile`. ([Shared/AppPaths.cs](src/QuotaGlass.Shared/AppPaths.cs), [Services/SnapshotWatcher.cs](src/QuotaGlass.Widget/Services/SnapshotWatcher.cs))
+
+### Added
+
+- **R4-N1** — OAuth refresh-token rotation in `CredentialPoller`. On 401 we POST to the refresh endpoint with the stored `refresh_token`, cache the new `access_token` for ≤55 min, retry the probe once. We never write back to the user's `.credentials.json` (the CLI owns it). ([NMH/CredentialPoller.cs](src/QuotaGlass.NMH/CredentialPoller.cs))
+- **R4-N4** — `QuotaGlass.NMH.exe --register` now detects Claude Code / Codex / Hermes credential files and registers a per-user Scheduled Task `QuotaGlass.CredentialPoll` (logon trigger + 30-min repetition). `--unregister` removes it. Uses `schtasks.exe` XML — no new NuGet dep, no admin elevation. ([NMH/ScheduledTaskRegistration.cs](src/QuotaGlass.NMH/ScheduledTaskRegistration.cs))
+- **R4-Q-06** — Tray context menu reorganized: top level is Show / Hide / Settings… / Window→ / Updates→ / Quit. Window submenu carries Refresh + Reset position; Updates carries Check-for-updates. Top-level menu height halved. ([Services/TrayIconService.cs](src/QuotaGlass.Widget/Services/TrayIconService.cs))
+- **R4-Q-11** — Settings panel "Reset settings to defaults" button. Restores alarm ladder / thresholds / theme / etc. via `Settings.CreateDefault()`; preserves Widget.X/Y and HasShownFirstRunToast. Confirmation dialog. ([ViewModels/SettingsPanelViewModel.cs](src/QuotaGlass.Widget/ViewModels/SettingsPanelViewModel.cs), [Views/MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml))
+
+### Changed
+
+- **R4-Q-03** — `docs/extension-integration.md` now has a dedicated "Direct credential reading (`--poll-credentials`)" section documenting token routing, output file, scheduled-task auto-start, and CLI usage. ([docs/extension-integration.md](docs/extension-integration.md))
+- **R4-Q-04** — `Logger.Init` / `WidgetLogger.Init` store the log directory only; per-write computes today's path. Cross-midnight runs roll into the next day's file naturally.
+- **R4-Q-05** — `MainViewModel.ReducedMotion` subscribes to `SystemParameters.StaticPropertyChanged`; runtime accessibility-preference flips now propagate.
+- **R4-Q-07** — `FocusAssist.QueryState` now caches for 3 s. A snapshot with 6 buckets × 6 rule families no longer makes 15+ P/Invokes.
+- **R4-Q-08** — When U3 (anomaly) just fired for the current reset window, R3 (zero-state) is suppressed so the user doesn't get a double-toast.
+- **R4-Q-09** — Per-bucket "Snooze until reset" now uses the real `NextResetLocal - now` (clamped to ≥5 min) instead of `TimeSpan.FromDays(8)`.
+- **R4-Q-01** — README "Run tests" wording updated: 37+ tests across 6 fixture files (was 11).
+
+### Added — tests
+
+- **8 new `CredentialPollerTests`** for the rewritten F-N1 path: `ClassifyToken` (7 inline cases), `ReadCredentialFile` top-level + nested shapes, `ExtractOpenAiPlatformUsage` happy + empty paths.
+
+### Repo hygiene
+
+- ROADMAP.md slimmed down to **pending work only**. Completed items live in this changelog by release. Pass 1/2/3/4 dossiers remain as evidence references.
+
+### Known limitations carried forward to v0.6
+
+- L-04 toast actions (Snooze 1h / Open analytics buttons on the toast itself) — COM activator work; not in v0.5.
+- Schema v2 wire-history bundling — needs AI-Usage_Tracker side; deferred.
+- Multi-account columns full version (R3-P2-01) — needs F-N1 to land on real multi-account data first.
+- Manual screenshots for `assets/screenshots/` — still open.
 
 ## [0.4.0] — 2026-05-25
 
