@@ -31,7 +31,7 @@ namespace QuotaGlass.Widget.Services;
 public sealed class ToastActivator : INotificationActivationCallback
 {
     /// <summary>Stable activator CLSID. Pinned for the life of the project.</summary>
-    public const string Clsid = "4F1B3F6E-2D8C-4E83-9C12-9B0B17F8D2A2";
+    public const string Clsid = "4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE";
 
     public void Activate(
         [MarshalAs(UnmanagedType.LPWStr)] string appUserModelId,

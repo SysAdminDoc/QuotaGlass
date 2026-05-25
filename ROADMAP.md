@@ -31,7 +31,6 @@ Blocked items do not stop autonomous execution; continue with the next unblocked
 
 ## Phase 8 - v0.10.0 - scheduler tests + cleanup
 
-- [ ] **R5-P1-03 - Rename CLSID near-collision.** Separate the toast activator CLSID from the Inno AppId GUID family so future maintenance does not confuse `...D2A2` with `...D2A1`. Update installer and registration docs in the same change.
 - [ ] **MainWindow.xaml.cs split.** Extract helper classes for tray wiring, update checks, and bucket context menu once tests are in place.
 
 ---
@@ -48,4 +47,4 @@ Blocked items do not stop autonomous execution; continue with the next unblocked
 
 ## Next Autonomous Pick
 
-Start with **R5-P1-03** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.
+Start with **MainWindow.xaml.cs split** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **U3/R3 double-toast ordering** - anomaly detection now runs before zero-state handling so a same-snapshot usage spike at 100% suppresses the R3 toast instead of notifying twice for one event.
+- **R5-P1-03** - Toast activator CLSID changed to `{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}` and the Inno shortcut registration now uses the same distinct GUID, eliminating the visual near-collision with the installer AppId.
 
 ## [0.9.0] — 2026-05-25
 
@@ -45,7 +46,6 @@ Pass 5 audit + fast-follow fixes. Three Pass 5 P0 findings landed plus the test 
 - **R5-P0-02 / R5-N6** — Verify Claude Code OAuth refresh endpoint. Lab work; **needs live validation** on a real Claude Code install.
 - **R5-N1** — XAML → `Strings.Get` migration (proof-of-concept on one button first).
 - **R5-N2** — AlarmScheduler dedup unit tests (needs `IToastService` / `IFiredRulesStore` interface extraction).
-- **R5-P1-03** — Rename CLSID near-collision (toast activator `…D2A2` vs Inno AppId `…D2A1`).
 - **MainWindow.xaml.cs split** — TrayWiring / UpdateCheck / BucketContextMenu helper classes.
 
 ## [0.8.0] — 2026-05-25
