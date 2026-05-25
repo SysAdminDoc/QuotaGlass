@@ -9,10 +9,22 @@ namespace QuotaGlass.Widget.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
+    /// <summary>
+    /// Refresh expectation: the extension's default is 5 min (see
+    /// AI-Usage_Tracker storage.js defaultSettings.refreshMinutes).
+    /// We treat anything older than 2x that as stale, 6x as very stale.
+    /// </summary>
+    private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan VeryStaleAfter = TimeSpan.FromMinutes(30);
+
     private readonly SnapshotWatcher _watcher;
     private readonly DispatcherTimer _countdownTimer;
     private readonly AlarmScheduler? _alarms;
+    private readonly PaceCalculator _pace = new();
+    private DateTimeOffset? _lastSnapshotTs;
+    private bool _isStale;
     private string _statusText = "Starting up…";
+    private string _statusKind = "info"; // "info" | "stale" | "very-stale" | "error"
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -34,6 +46,17 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    public string StatusKind
+    {
+        get => _statusKind;
+        private set
+        {
+            if (_statusKind == value) return;
+            _statusKind = value;
+            Raise();
+        }
+    }
+
     public MainViewModel(Dispatcher dispatcher, AlarmScheduler? alarms = null)
     {
         _watcher = new SnapshotWatcher(dispatcher);
@@ -49,7 +72,34 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _countdownTimer.Tick += (_, _) =>
         {
             foreach (var b in Buckets) b.TickCountdown();
+            UpdateStaleness();
         };
+    }
+
+    private void UpdateStaleness()
+    {
+        if (!_lastSnapshotTs.HasValue) return;
+        var age = DateTimeOffset.UtcNow - _lastSnapshotTs.Value;
+        var nowStale = age > StaleAfter;
+        if (nowStale == _isStale) return;
+        _isStale = nowStale;
+        var (kind, opacity, prefix) = age > VeryStaleAfter
+            ? ("very-stale", 0.5, "STALE — ")
+            : age > StaleAfter
+                ? ("stale", 0.75, "Stale — ")
+                : ("info", 1.0, string.Empty);
+
+        StatusKind = kind;
+        StatusText = $"{prefix}Last update: {_lastSnapshotTs.Value.ToLocalTime():t} ({FormatAge(age)} ago)";
+        foreach (var b in Buckets) b.SetStale(opacity);
+    }
+
+    private static string FormatAge(TimeSpan age)
+    {
+        if (age.TotalDays >= 1) return $"{(int)age.TotalDays}d";
+        if (age.TotalHours >= 1) return $"{(int)age.TotalHours}h";
+        if (age.TotalMinutes >= 1) return $"{(int)age.TotalMinutes}m";
+        return $"{(int)age.TotalSeconds}s";
     }
 
     public void Start()
@@ -61,6 +111,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     private void OnSnapshot(object? sender, SnapshotMessage message)
     {
+        _lastSnapshotTs = message.Timestamp;
+        _isStale = false;
+        StatusKind = "info";
+        foreach (var b in Buckets) b.SetStale(1.0);
+
         var state = message.State;
         if (state is null) return;
 
@@ -75,6 +130,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         var seenIds = new HashSet<string>();
 
         var desiredOrder = new List<BucketViewModel>(incoming.Count);
+        var now = DateTimeOffset.UtcNow;
         foreach (var (key, bucket) in incoming)
         {
             seenIds.Add(bucket.Id);
@@ -87,6 +143,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 vm = new BucketViewModel();
                 vm.Apply(key, bucket);
             }
+            vm.SetPace(_pace.Forecast(bucket.Id, bucket.PercentUsed, now, bucket.ResetIso));
             desiredOrder.Add(vm);
         }
 

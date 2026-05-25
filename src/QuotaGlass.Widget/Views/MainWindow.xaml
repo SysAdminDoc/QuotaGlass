@@ -19,6 +19,8 @@
         Top="40">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
         <Style x:Key="HitButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -84,7 +86,12 @@
             <ItemsControl Grid.Row="1" ItemsSource="{Binding Buckets}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:BucketViewModel}">
-                        <Border Style="{StaticResource CardBorder}">
+                        <Border Style="{StaticResource CardBorder}"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="OnCardClicked"
+                                ToolTip="Open analytics in browser"
+                                AutomationProperties.Name="{Binding PercentLabel}"
+                                AutomationProperties.HelpText="Click to open the provider's analytics page.">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -92,7 +99,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!--  Ring with center percent overlay  -->
-                                <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0">
+                                <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0" Opacity="{Binding StaleOpacity}">
                                     <c:RadialRing Percent="{Binding Percent}"
                                                   Thickness="9"
                                                   TrackBrush="{StaticResource Brush.Ring.Track}"
@@ -112,6 +119,9 @@
                                     <TextBlock Style="{StaticResource SubText}" Margin="0,2,0,0" Text="{Binding PercentLabel}" />
                                     <TextBlock Style="{StaticResource SubText}" Text="{Binding ResetAtLabel}" />
                                     <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" Text="{Binding KindBadge}" />
+                                    <TextBlock Style="{StaticResource MutedText}"
+                                               Text="{Binding PaceLabel}"
+                                               Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
                                 </StackPanel>
                             </Grid>
                         </Border>

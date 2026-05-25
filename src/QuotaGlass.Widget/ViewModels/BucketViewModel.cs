@@ -9,6 +9,8 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     private Bucket _model = new();
     private string _providerKey = string.Empty;
     private string? _cachedTimeUntilResetLabel;
+    private string? _paceLabel;
+    private double _staleOpacity = 1.0;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -64,6 +66,44 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         _ => _model.Kind,
     };
 
+    /// <summary>
+    /// Provider URL for the click-to-open-analytics affordance.
+    /// </summary>
+    public string AnalyticsUrl => _providerKey switch
+    {
+        "claude" => "https://claude.ai/settings/usage",
+        "codex" => "https://chatgpt.com/codex/cloud/settings/analytics#usage",
+        _ => "",
+    };
+
+    /// <summary>
+    /// Burn-rate forecast text. Empty when no pace estimate available.
+    /// </summary>
+    public string PaceLabel => _paceLabel ?? string.Empty;
+
+    public bool HasPace => !string.IsNullOrEmpty(_paceLabel);
+
+    /// <summary>
+    /// 0..1 dim factor applied to the ring when data is stale. 1.0 = fresh,
+    /// 0.5 = stale.
+    /// </summary>
+    public double StaleOpacity => _staleOpacity;
+
+    public void SetPace(string? label)
+    {
+        if (_paceLabel == label) return;
+        _paceLabel = label;
+        Raise(nameof(PaceLabel));
+        Raise(nameof(HasPace));
+    }
+
+    public void SetStale(double opacity)
+    {
+        if (Math.Abs(_staleOpacity - opacity) < 0.01) return;
+        _staleOpacity = opacity;
+        Raise(nameof(StaleOpacity));
+    }
+
     public void Apply(string providerKey, Bucket bucket)
     {
         _providerKey = providerKey;
@@ -79,6 +119,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         Raise(nameof(TimeUntilResetLabel));
         Raise(nameof(ResetAtLabel));
         Raise(nameof(KindBadge));
+        Raise(nameof(AnalyticsUrl));
     }
 
     public void TickCountdown()

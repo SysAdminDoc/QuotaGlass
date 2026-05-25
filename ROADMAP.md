@@ -60,13 +60,14 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] **N-13** — `Services/AlarmScheduler.cs` evaluates the full ladder (24/12/6/3/1h, 30/15/5m, at-reset) every 15 s with fire-once idempotency keyed `<provider>-<bucket>-R1-<lead>-<resetISO>`; persisted in `Services/FiredRulesStore.cs` at `%LOCALAPPDATA%\QuotaGlass\fired-rules.json`.
 - [x] **N-14** — Zero-state R3 + R2 renewal-arrived + U1 75/90/95 threshold rules all live in `AlarmScheduler.EvaluateProvider`.
 
-### Batch 4 — Widget polish
+### Batch 4 — Widget polish ✅
 
-- [ ] **F-N8** — `--inject-fake-snapshot` dev mode (writes deterministic snapshot.json for solo widget dev).
-- [ ] **F-N6** — Click bucket card → open analytics page in default browser via `Process.Start(url) { UseShellExecute = true }`.
-- [ ] **F-A9** — Stale-snapshot visual state (greyed ring + colored status when `now - ts > 2× refresh interval`).
-- [ ] **F-A19** — Catppuccin contrast fix: `Brush.Card.MutedText` from `Overlay1 #7F849C` → `Overlay0 #6C7086` for WCAG AA.
-- [ ] **R2-P1-03** — Pace footer (`BucketViewModel.PaceLabel` derived from snapshot history).
+- [x] **F-N8** — `App.OnStartup` parses `--inject-fake-snapshot`; `Services/FakeSnapshotInjector` writes a deterministic 4-bucket snapshot.
+- [x] **F-N6** — Card `MouseLeftButtonUp` → `Process.Start(analyticsUrl) { UseShellExecute = true }` via `BucketViewModel.AnalyticsUrl`.
+- [x] **F-A9** — `MainViewModel.UpdateStaleness` colors `StatusKind` + dims each ring via `BucketViewModel.StaleOpacity` at 10 min / 30 min thresholds.
+- [x] **F-A19** — `Brush.Card.MutedText` bumped from Overlay1 to Overlay2 for ≥4.5:1 contrast on Mantle@0.88.
+- [x] **R2-P1-03** — `Services/PaceCalculator` linear-extrapolates between consecutive snapshots; shown only when pace would exhaust before reset.
+- [x] **F-A14** — (already shipped in Batch 2 — listed here for completeness.)
 
 ### Batch 5 — Tray + first-run
 

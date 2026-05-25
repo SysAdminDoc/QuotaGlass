@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using QuotaGlass.Widget.Services;
@@ -63,5 +65,25 @@ public partial class MainWindow : Window
         // the executable) brings it back. Use File -> Quit (settings panel) or
         // the tray menu's Quit entry to actually terminate the process.
         Hide();
+    }
+
+    private void OnCardClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BucketViewModel vm }
+            && !string.IsNullOrEmpty(vm.AnalyticsUrl))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = vm.AnalyticsUrl,
+                    UseShellExecute = true,
+                });
+            }
+            catch
+            {
+                // Default browser failure must never crash the widget.
+            }
+        }
     }
 }
