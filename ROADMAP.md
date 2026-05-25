@@ -29,9 +29,8 @@ Blocked items do not stop autonomous execution; continue with the next unblocked
 
 ---
 
-## Phase 8 - v0.10.0 - localization proof + scheduler tests + cleanup
+## Phase 8 - v0.10.0 - scheduler tests + cleanup
 
-- [ ] **R5-N1 - XAML to `Strings` proof-of-concept.** Wire one visible Setup/Card/Settings string through `Resources/Strings.cs` so the localization scaffold is exercised end-to-end before a full RESX migration.
 - [ ] **R5-N2 - AlarmScheduler dedup unit tests.** Add focused tests for fire-once behavior, snooze suppression, Focus Assist suppression, and U3/R3 interaction. Keep the production API small; introduce interfaces only if required by tests.
 - [ ] **R5-P1-03 - Rename CLSID near-collision.** Separate the toast activator CLSID from the Inno AppId GUID family so future maintenance does not confuse `...D2A2` with `...D2A1`. Update installer and registration docs in the same change.
 - [ ] **MainWindow.xaml.cs split.** Extract helper classes for tray wiring, update checks, and bucket context menu once tests are in place.
@@ -50,4 +49,4 @@ Blocked items do not stop autonomous execution; continue with the next unblocked
 
 ## Next Autonomous Pick
 
-Start with **R5-N1** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.
+Start with **R5-N2** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.

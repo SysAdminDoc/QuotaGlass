@@ -43,6 +43,7 @@ public static class Strings
         ["SetupRunRegister"] = "Run --register",
         ["SetupHelp"] = "Help",
         ["SetupDismiss24h"] = "Dismiss 24h",
+        ["SetupDismiss24hToolTip"] = "Hide the setup card for 24 hours.",
 
         // Settings panel
         ["SettingsHide"] = "˄ Hide settings",
@@ -100,6 +101,13 @@ public static class Strings
         if (Defaults.TryGetValue(key, out var value)) return value;
         return key; // surface unknown keys verbatim so missing strings are visible.
     }
+
+    public static string SetupHeader => Get(nameof(SetupHeader));
+    public static string SetupInstallExtension => Get(nameof(SetupInstallExtension));
+    public static string SetupRunRegister => Get(nameof(SetupRunRegister));
+    public static string SetupHelp => Get(nameof(SetupHelp));
+    public static string SetupDismiss24h => Get(nameof(SetupDismiss24h));
+    public static string SetupDismiss24hToolTip => Get(nameof(SetupDismiss24hToolTip));
 
     /// <summary>R4-N9 — set the UI culture at startup. Future v0.8 wires a
     /// settings entry; v0.7 just exposes the API so localization-aware

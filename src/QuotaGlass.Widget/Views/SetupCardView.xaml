@@ -1,6 +1,7 @@
 <UserControl x:Class="QuotaGlass.Widget.Views.SetupCardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="clr-namespace:QuotaGlass.Widget.Resources">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
@@ -10,7 +11,7 @@
             Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}"
             Margin="0,0,0,8">
         <StackPanel>
-            <TextBlock Style="{StaticResource HeaderText}" Text="Setup" />
+            <TextBlock Style="{StaticResource HeaderText}" Text="{x:Static res:Strings.SetupHeader}" />
             <TextBlock Style="{StaticResource SubText}"
                        Margin="0,6,0,2"
                        Text="{Binding ExtensionStepLabel}" />
@@ -21,21 +22,21 @@
                        Margin="0,0,0,6"
                        Text="{Binding SnapshotStepLabel}" />
             <StackPanel Orientation="Horizontal">
-                <Button Content="Install extension"
+                <Button Content="{x:Static res:Strings.SetupInstallExtension}"
                         Style="{StaticResource HitButton}"
                         Tag="{Binding ExtensionInstallUrl}"
                         Click="OnOpenUrl" />
-                <Button Content="Run --register"
+                <Button Content="{x:Static res:Strings.SetupRunRegister}"
                         Style="{StaticResource HitButton}"
                         Click="OnRunRegister" />
-                <Button Content="Help"
+                <Button Content="{x:Static res:Strings.SetupHelp}"
                         Style="{StaticResource HitButton}"
                         Tag="{Binding TroubleshootingUrl}"
                         Click="OnOpenUrl" />
-                <Button Content="Dismiss 24h"
+                <Button Content="{x:Static res:Strings.SetupDismiss24h}"
                         Style="{StaticResource HitButton}"
                         Click="OnDismiss"
-                        ToolTip="Hide the setup card for 24 hours." />
+                        ToolTip="{x:Static res:Strings.SetupDismiss24hToolTip}" />
             </StackPanel>
         </StackPanel>
     </Border>

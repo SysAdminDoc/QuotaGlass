@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.9.0 just shipped.
+### Added
+
+- **R5-N1** - Setup card literals now flow through `Resources/Strings.cs` via `x:Static`, proving the localization scaffold works from XAML before the full RESX migration.
 
 ## [0.9.0] — 2026-05-25
 
