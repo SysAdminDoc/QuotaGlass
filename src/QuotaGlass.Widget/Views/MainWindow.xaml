@@ -111,7 +111,7 @@
                                     </TextBlock>
                                     <TextBlock Style="{StaticResource SubText}" Margin="0,2,0,0" Text="{Binding PercentLabel}" />
                                     <TextBlock Style="{StaticResource SubText}" Text="{Binding ResetAtLabel}" />
-                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" Text="{Binding SourceLabel}" />
+                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" Text="{Binding KindBadge}" />
                                 </StackPanel>
                             </Grid>
                         </Border>

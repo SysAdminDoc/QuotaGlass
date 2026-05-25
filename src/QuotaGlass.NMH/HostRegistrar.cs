@@ -18,19 +18,9 @@ internal static class HostRegistrar
     private const string HostName = "com.sysadmindoc.quotaglass";
     private const string HostDescription = "QuotaGlass desktop bridge for AI-Usage_Tracker.";
 
-    // AI-Usage_Tracker extension IDs. Update if the official ID changes.
-    private static readonly string[] ChromeExtensionIds =
-    {
-        // Placeholder — replace with the real chrome.google.com/webstore ID once published.
-        // The 32-char ID assigned to AI-Usage_Tracker.
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    };
-
-    // Source of truth: AI-Usage_Tracker/manifests/firefox.json -> browser_specific_settings.gecko.id
-    private static readonly string[] FirefoxExtensionIds =
-    {
-        "ai-usage-tracker@sysadmindoc.dev",
-    };
+    // Single source of truth — keep these in lockstep with MessagePump.
+    private static readonly string[] ChromeExtensionIds = { AllowedOrigins.AiUsageTrackerChromeId };
+    private static readonly string[] FirefoxExtensionIds = AllowedOrigins.FirefoxExtensionIds;
 
     public static int Register()
     {

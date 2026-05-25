@@ -41,15 +41,15 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] **F-A17** — `BucketViewModel.TickCountdown` caches formatted string; only INPC on change.
 - [x] **F-A13** — NMH ack payload includes `nmhVersion`/`schemaMin`/`schemaMax`/`serverTime`.
 
-### Batch 2 — Schema + integration contract
+### Batch 2 — Schema + integration contract ✅
 
-- [ ] **F-N9** — Author `docs/extension-integration.md` schema spec (canonical contract).
-- [ ] **F-A1** — Rewrite `BucketSnapshot.cs` to mirror extension's actual `state` envelope (`fetchedAtISO`, `providers.{claude,codex}.{ok,source,orgId,plan,buckets[]}`, `bucket.{id,kind,model,label,percentUsed,resetISO,rawResetText}`).
-- [ ] **F-A5** — Reconcile buckets by `Bucket.Id` not `Provider/Label` (rolls in with F-A1).
-- [ ] **F-A12** — Schema versioning + migration scaffold (`Shared/SchemaVersion.cs`).
-- [ ] **F-A13** — NMH ack payload includes `nmhVersion`, `schemaMin`, `schemaMax`, `serverTime`.
-- [ ] **R2-P1-02** — JSON `MaxDepth = 16` on `SnapshotJsonContext`; per-field length checks.
-- [ ] **F-A14** — Origin allow-list enforcement in `MessagePump`.
+- [x] **F-N9** — `docs/extension-integration.md` is now the canonical schema spec.
+- [x] **F-A1** — `BucketSnapshot.cs` rewritten as `SnapshotMessage` → `ExtensionState` → `ProviderMap` → `ProviderSnapshot` → `Bucket`, mirroring the extension envelope 1:1.
+- [x] **F-A5** — `MainViewModel.OnSnapshot` reconciles by `Bucket.Id`; preserves desired display order.
+- [x] **F-A12** — `Shared/SchemaVersion.cs` + `IsSupported` check in both `MessagePump` and `SnapshotWatcher`.
+- [x] **F-A13** — NMH ack carries version/schema range/server time (already shipped in Batch 1).
+- [x] **R2-P1-02** — `MaxDepth = 16` on `SnapshotJsonContext`; `MessagePump` translates depth errors to `"max-depth-exceeded"` ack.
+- [x] **F-A14** — `Shared/AllowedOrigins.cs` is the single source of truth for permitted callers; `MessagePump` rejects unlisted origins with `"origin-rejected"`.
 
 ### Batch 3 — Toast + TopMost (alarm UX foundation)
 

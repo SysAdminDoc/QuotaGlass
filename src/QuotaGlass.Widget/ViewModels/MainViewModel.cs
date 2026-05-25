@@ -15,6 +15,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>
+    /// Flat list of buckets across both providers, in deterministic display
+    /// order (Claude session → Claude weekly → Codex 5h → Codex weekly →
+    /// per-model expansions). Bound to the ItemsControl in MainWindow.
+    /// </summary>
     public ObservableCollection<BucketViewModel> Buckets { get; } = new();
 
     public string StatusText
@@ -50,40 +55,75 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _countdownTimer.Start();
     }
 
-    private void OnSnapshot(object? sender, BucketSnapshot snap)
+    private void OnSnapshot(object? sender, SnapshotMessage message)
     {
-        var existingByKey = Buckets.ToDictionary(KeyOf, v => v);
-        var seenKeys = new HashSet<string>();
+        var state = message.State;
+        if (state is null) return;
 
-        foreach (var bucket in snap.Buckets)
+        // Walk providers in a stable order so cards don't reshuffle on each
+        // refresh. Within a provider, preserve the extension's bucket order.
+        var incoming = new List<(string Key, Bucket Bucket)>();
+        AppendProvider(incoming, "claude", state.Providers.Claude);
+        AppendProvider(incoming, "codex", state.Providers.Codex);
+
+        // Reconcile by Bucket.Id (F-A5). Stable across label / kind changes.
+        var existingById = Buckets.ToDictionary(KeyOf, vm => vm);
+        var seenIds = new HashSet<string>();
+
+        var desiredOrder = new List<BucketViewModel>(incoming.Count);
+        foreach (var (key, bucket) in incoming)
         {
-            var key = KeyOf(bucket);
-            seenKeys.Add(key);
-
-            if (existingByKey.TryGetValue(key, out var vm))
+            seenIds.Add(bucket.Id);
+            if (existingById.TryGetValue(bucket.Id, out var vm))
             {
-                vm.Apply(bucket);
+                vm.Apply(key, bucket);
             }
             else
             {
-                var fresh = new BucketViewModel();
-                fresh.Apply(bucket);
-                Buckets.Add(fresh);
+                vm = new BucketViewModel();
+                vm.Apply(key, bucket);
             }
+            desiredOrder.Add(vm);
         }
 
+        // Drop disappeared buckets.
         for (var i = Buckets.Count - 1; i >= 0; i--)
         {
-            if (!seenKeys.Contains(KeyOf(Buckets[i])))
+            if (!seenIds.Contains(KeyOf(Buckets[i])))
             {
                 Buckets.RemoveAt(i);
             }
         }
+
+        // Reorder to desired order. Cheap because the collection is small.
+        for (var i = 0; i < desiredOrder.Count; i++)
+        {
+            var vm = desiredOrder[i];
+            var currentIndex = Buckets.IndexOf(vm);
+            if (currentIndex == -1)
+            {
+                Buckets.Insert(i, vm);
+            }
+            else if (currentIndex != i)
+            {
+                Buckets.Move(currentIndex, i);
+            }
+        }
     }
 
-    private static string KeyOf(Bucket b) => $"{b.Provider}/{b.Label}";
+    private static void AppendProvider(List<(string Key, Bucket Bucket)> dst, string key, ProviderSnapshot? snap)
+    {
+        if (snap is null) return;
+        if (snap.Buckets.Count == 0) return;
+        foreach (var bucket in snap.Buckets)
+        {
+            if (string.IsNullOrWhiteSpace(bucket.Id)) continue;
+            dst.Add((key, bucket));
+        }
+    }
 
-    private static string KeyOf(BucketViewModel vm) => $"{vm.Provider}/{vm.Label}";
+    private static string KeyOf(Bucket b) => b.Id;
+    private static string KeyOf(BucketViewModel vm) => vm.Id;
 
     public void Dispose()
     {

@@ -7,7 +7,7 @@ namespace QuotaGlass.Widget.Services;
 
 /// <summary>
 /// Watches the on-disk snapshot file written by QuotaGlass.NMH and raises
-/// <see cref="SnapshotChanged"/> with the latest decoded snapshot. Debounced
+/// <see cref="SnapshotChanged"/> with the latest decoded message. Debounced
 /// to coalesce rapid burst writes from atomic-replace patterns.
 /// </summary>
 public sealed class SnapshotWatcher : IDisposable
@@ -16,10 +16,10 @@ public sealed class SnapshotWatcher : IDisposable
     private readonly DispatcherTimer _debounce;
     private readonly Dispatcher _dispatcher;
 
-    public event EventHandler<BucketSnapshot>? SnapshotChanged;
+    public event EventHandler<SnapshotMessage>? SnapshotChanged;
     public event EventHandler<string>? StatusChanged;
 
-    public BucketSnapshot? Latest { get; private set; }
+    public SnapshotMessage? Latest { get; private set; }
 
     public SnapshotWatcher(Dispatcher dispatcher)
     {
@@ -56,7 +56,6 @@ public sealed class SnapshotWatcher : IDisposable
 
     private void OnFsEvent(object sender, FileSystemEventArgs e)
     {
-        // Marshal debounce kick to the UI thread.
         _dispatcher.BeginInvoke(() =>
         {
             _debounce.Stop();
@@ -66,16 +65,24 @@ public sealed class SnapshotWatcher : IDisposable
 
     private void ReloadAndPublish()
     {
-        var snap = AtomicJsonFile.Read(AppPaths.SnapshotFile, SnapshotJsonContext.Default.BucketSnapshot);
-        if (snap is null)
+        var message = AtomicJsonFile.Read(AppPaths.SnapshotFile, SnapshotJsonContext.Default.SnapshotMessage);
+        if (message is null)
         {
             StatusChanged?.Invoke(this, "Waiting for first snapshot from extension…");
             return;
         }
 
-        Latest = snap;
-        SnapshotChanged?.Invoke(this, snap);
-        StatusChanged?.Invoke(this, $"Last update: {snap.Timestamp.ToLocalTime():t}");
+        // Tolerate older schema versions (none yet) by ignoring; future
+        // migration code lives in SchemaMigrator.
+        if (!SchemaVersion.IsSupported(message.SchemaVersion))
+        {
+            StatusChanged?.Invoke(this, $"Snapshot schema v{message.SchemaVersion} not supported (supported: {SchemaVersion.Min}..{SchemaVersion.Max}).");
+            return;
+        }
+
+        Latest = message;
+        SnapshotChanged?.Invoke(this, message);
+        StatusChanged?.Invoke(this, $"Last update: {message.Timestamp.ToLocalTime():t}");
     }
 
     public void Dispose()

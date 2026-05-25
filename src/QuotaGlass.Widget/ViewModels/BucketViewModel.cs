@@ -7,17 +7,25 @@ namespace QuotaGlass.Widget.ViewModels;
 public sealed class BucketViewModel : INotifyPropertyChanged
 {
     private Bucket _model = new();
+    private string _providerKey = string.Empty;
     private string? _cachedTimeUntilResetLabel;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string Provider => _model.Provider.ToString();
+    /// <summary>Stable identifier the widget reconciles on (see F-A5).</summary>
+    public string Id => _model.Id;
 
+    /// <summary>Display-only label; may drift between extension versions.</summary>
     public string Label => _model.Label;
 
-    public string? Plan => _model.Plan;
+    public string Kind => _model.Kind;
 
-    public double Percent => Math.Clamp(_model.Percent, 0, 100);
+    public string? Model => _model.Model;
+
+    /// <summary>Human-readable provider name from the snapshot envelope.</summary>
+    public string Provider => HumanProvider(_providerKey);
+
+    public double Percent => Math.Clamp(_model.PercentUsed, 0, 100);
 
     public string PercentLabel => $"{Percent:0}% used";
 
@@ -25,7 +33,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     {
         get
         {
-            if (_model.ResetIso is null) return "—";
+            if (_model.ResetIso is null) return _model.RawResetText ?? "—";
             var delta = _model.ResetIso.Value - DateTimeOffset.UtcNow;
             if (delta.TotalSeconds <= 0) return "renewed";
             if (delta.TotalDays >= 1) return $"{(int)delta.TotalDays}d {delta.Hours}h";
@@ -39,7 +47,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     {
         get
         {
-            if (_model.ResetIso is null) return "Reset time unknown";
+            if (_model.ResetIso is null) return _model.RawResetText ?? "Reset time unknown";
             var local = _model.ResetIso.Value.ToLocalTime();
             var sameDay = local.Date == DateTimeOffset.Now.Date;
             return sameDay
@@ -48,28 +56,29 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         }
     }
 
-    public string SourceLabel => _model.Source switch
+    public string KindBadge => _model.Kind switch
     {
-        SnapshotSource.Api => "via API",
-        SnapshotSource.Stream => "via SSE",
-        SnapshotSource.Headers => "via headers",
-        SnapshotSource.Dom => "via DOM",
-        SnapshotSource.SilentTab => "via silent tab",
-        _ => string.Empty,
+        "session" => "session",
+        "5h" => "5-hour",
+        "weekly" => "weekly",
+        _ => _model.Kind,
     };
 
-    public void Apply(Bucket bucket)
+    public void Apply(string providerKey, Bucket bucket)
     {
+        _providerKey = providerKey;
         _model = bucket;
         _cachedTimeUntilResetLabel = null;
-        Raise(nameof(Provider));
+        Raise(nameof(Id));
         Raise(nameof(Label));
-        Raise(nameof(Plan));
+        Raise(nameof(Kind));
+        Raise(nameof(Model));
+        Raise(nameof(Provider));
         Raise(nameof(Percent));
         Raise(nameof(PercentLabel));
         Raise(nameof(TimeUntilResetLabel));
         Raise(nameof(ResetAtLabel));
-        Raise(nameof(SourceLabel));
+        Raise(nameof(KindBadge));
     }
 
     public void TickCountdown()
@@ -81,6 +90,14 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         _cachedTimeUntilResetLabel = next;
         Raise(nameof(TimeUntilResetLabel));
     }
+
+    private static string HumanProvider(string key) => key switch
+    {
+        "claude" => "Claude",
+        "codex" => "Codex",
+        "" => "—",
+        _ => char.ToUpperInvariant(key[0]) + key[1..],
+    };
 
     private void Raise([CallerMemberName] string? prop = null)
     {

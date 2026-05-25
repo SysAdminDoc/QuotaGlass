@@ -2,70 +2,136 @@ using System.Text.Json.Serialization;
 
 namespace QuotaGlass.Shared;
 
-public enum Provider
+// Canonical wire shape — see docs/extension-integration.md
+//
+// The extension's state envelope from AI-Usage_Tracker/src/lib/storage.js
+// defaultState(). We mirror it 1:1 so deserialization is lossless and the
+// notification rule keys can be reconstructed exactly.
+
+/// <summary>
+/// Top-level message envelope. Always sent over native messaging.
+/// </summary>
+public sealed class SnapshotMessage
 {
-    Unknown = 0,
-    Claude = 1,
-    Codex = 2,
+    /// <summary>Either "snapshot" or "ping". Required.</summary>
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = "snapshot";
+
+    /// <summary>Wire schema version. Current = 1. Required for snapshot kind.</summary>
+    [JsonPropertyName("schemaVersion")]
+    public int SchemaVersion { get; set; } = 1;
+
+    /// <summary>UTC timestamp the extension produced this frame.</summary>
+    [JsonPropertyName("ts")]
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Informational only; not gated on.</summary>
+    [JsonPropertyName("extensionVersion")]
+    public string? ExtensionVersion { get; set; }
+
+    /// <summary>State envelope. Null for ping frames.</summary>
+    [JsonPropertyName("state")]
+    public ExtensionState? State { get; set; }
 }
 
-public enum SnapshotSource
+/// <summary>
+/// Mirrors AI-Usage_Tracker `state.snapshot`. Per-provider map keyed by
+/// well-known provider names ("claude", "codex"). Either may be null/missing
+/// if that provider has not produced data yet.
+/// </summary>
+public sealed class ExtensionState
 {
-    Unknown = 0,
-    Api = 1,
-    Stream = 2,
-    Headers = 3,
-    Dom = 4,
-    SilentTab = 5,
+    [JsonPropertyName("fetchedAtISO")]
+    public DateTimeOffset? FetchedAtIso { get; set; }
+
+    [JsonPropertyName("providers")]
+    public ProviderMap Providers { get; set; } = new();
 }
 
-public sealed class Bucket
+public sealed class ProviderMap
 {
+    [JsonPropertyName("claude")]
+    public ProviderSnapshot? Claude { get; set; }
+
+    [JsonPropertyName("codex")]
+    public ProviderSnapshot? Codex { get; set; }
+}
+
+/// <summary>
+/// One provider's most recent reading. `Ok=false` cases still get stored so
+/// the widget can surface the error with retain-last-good semantics.
+/// </summary>
+public sealed class ProviderSnapshot
+{
+    [JsonPropertyName("ok")]
+    public bool Ok { get; set; }
+
     [JsonPropertyName("provider")]
-    public Provider Provider { get; set; }
+    public string Provider { get; set; } = string.Empty;
 
-    [JsonPropertyName("label")]
-    public string Label { get; set; } = string.Empty;
+    [JsonPropertyName("source")]
+    public string? Source { get; set; }
+
+    [JsonPropertyName("orgId")]
+    public string? OrgId { get; set; }
+
+    [JsonPropertyName("accountId")]
+    public string? AccountId { get; set; }
 
     [JsonPropertyName("plan")]
     public string? Plan { get; set; }
 
-    [JsonPropertyName("percent")]
-    public double Percent { get; set; }
+    [JsonPropertyName("buckets")]
+    public List<Bucket> Buckets { get; set; } = new();
 
-    [JsonPropertyName("resetIso")]
-    public DateTimeOffset? ResetIso { get; set; }
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
 
-    [JsonPropertyName("source")]
-    public SnapshotSource Source { get; set; }
+    [JsonPropertyName("fallbackError")]
+    public string? FallbackError { get; set; }
+}
+
+/// <summary>
+/// One quota window. The widget reconciles its ObservableCollection by
+/// <see cref="Id"/>, never by <see cref="Label"/> — labels are presentation-
+/// only and drift between extension versions.
+/// </summary>
+public sealed class Bucket
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = string.Empty;  // "session" | "5h" | "weekly"
 
     [JsonPropertyName("model")]
     public string? Model { get; set; }
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = string.Empty;
+
+    [JsonPropertyName("percentUsed")]
+    public double PercentUsed { get; set; }
+
+    [JsonPropertyName("resetISO")]
+    public DateTimeOffset? ResetIso { get; set; }
+
+    [JsonPropertyName("rawResetText")]
+    public string? RawResetText { get; set; }
 }
 
-public sealed class BucketSnapshot
-{
-    [JsonPropertyName("kind")]
-    public string Kind { get; set; } = "snapshot";
-
-    [JsonPropertyName("schemaVersion")]
-    public int SchemaVersion { get; set; } = 1;
-
-    [JsonPropertyName("ts")]
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
-
-    [JsonPropertyName("extensionVersion")]
-    public string? ExtensionVersion { get; set; }
-
-    [JsonPropertyName("buckets")]
-    public List<Bucket> Buckets { get; set; } = new();
-}
-
-[JsonSerializable(typeof(BucketSnapshot))]
+[JsonSerializable(typeof(SnapshotMessage))]
+[JsonSerializable(typeof(ExtensionState))]
+[JsonSerializable(typeof(ProviderMap))]
+[JsonSerializable(typeof(ProviderSnapshot))]
 [JsonSerializable(typeof(Bucket))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    UseStringEnumConverter = true)]
+    UseStringEnumConverter = true,
+    // R2-P1-02: cap inbound JSON depth to defeat allocation-amplification
+    // attacks. Real envelope depth is ~5 (envelope -> state -> providers
+    // -> claude/codex -> bucket).
+    MaxDepth = 16)]
 public partial class SnapshotJsonContext : JsonSerializerContext;

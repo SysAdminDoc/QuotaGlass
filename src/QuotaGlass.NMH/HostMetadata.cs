@@ -1,11 +1,12 @@
 using System.Reflection;
+using QuotaGlass.Shared;
 
 namespace QuotaGlass.NMH;
 
 internal static class HostMetadata
 {
-    public const int SchemaMin = 1;
-    public const int SchemaMax = 1;
+    public const int SchemaMin = QuotaGlass.Shared.SchemaVersion.Min;
+    public const int SchemaMax = QuotaGlass.Shared.SchemaVersion.Max;
 
     public static string Version { get; } = ResolveVersion();
 

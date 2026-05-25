@@ -16,10 +16,16 @@ internal sealed class MessagePump
     private const int MaxInboundBytes = 1024 * 1024; // 1 MB per Chrome spec.
 
     private readonly string _callerOrigin;
+    private readonly bool _originAllowed;
 
     public MessagePump(string callerOrigin)
     {
         _callerOrigin = callerOrigin;
+        _originAllowed = AllowedOrigins.IsAllowed(callerOrigin);
+        if (!_originAllowed)
+        {
+            Logger.Warn($"caller origin not on allow-list: {callerOrigin}");
+        }
     }
 
     public async Task<int> RunAsync()
@@ -64,52 +70,92 @@ internal sealed class MessagePump
 
     private async Task HandleMessageAsync(byte[] payload, Stream stdout)
     {
-        BucketSnapshot? snapshot;
+        if (!_originAllowed)
+        {
+            await WriteAckAsync(stdout, ok: false, "origin-rejected", kind: null).ConfigureAwait(false);
+            return;
+        }
+
+        SnapshotMessage? message;
         try
         {
-            snapshot = JsonSerializer.Deserialize(payload, SnapshotJsonContext.Default.BucketSnapshot);
+            message = JsonSerializer.Deserialize(payload, SnapshotJsonContext.Default.SnapshotMessage);
         }
         catch (JsonException ex)
         {
+            // System.Text.Json wraps MaxDepth violations as JsonException with
+            // a specific message; surface as max-depth-exceeded so the bridge
+            // can distinguish a malformed payload from a depth attack.
+            var detail = ex.Message.Contains("depth", StringComparison.OrdinalIgnoreCase)
+                ? "max-depth-exceeded"
+                : "json-decode-failed";
             Logger.Warn($"json decode failed: {ex.Message}");
-            await WriteAckAsync(stdout, ok: false, "json-decode-failed").ConfigureAwait(false);
+            await WriteAckAsync(stdout, ok: false, detail, kind: null).ConfigureAwait(false);
             return;
         }
 
-        if (snapshot is null)
+        if (message is null)
         {
-            Logger.Warn("decoded snapshot was null");
-            await WriteAckAsync(stdout, ok: false, "null-snapshot").ConfigureAwait(false);
+            Logger.Warn("decoded message was null");
+            await WriteAckAsync(stdout, ok: false, "null-snapshot", kind: null).ConfigureAwait(false);
             return;
         }
 
-        if (!string.Equals(snapshot.Kind, "snapshot", StringComparison.Ordinal))
+        if (string.Equals(message.Kind, "ping", StringComparison.Ordinal))
         {
-            Logger.Warn($"unknown message kind: {snapshot.Kind}");
-            await WriteAckAsync(stdout, ok: false, "unknown-kind").ConfigureAwait(false);
+            // Keepalive: extension uses this to defeat Chrome MV3's 30s
+            // service-worker idle timer.
+            await WriteAckAsync(stdout, ok: true, "pong", kind: "pong").ConfigureAwait(false);
+            return;
+        }
+
+        if (!string.Equals(message.Kind, "snapshot", StringComparison.Ordinal))
+        {
+            Logger.Warn($"unknown message kind: {message.Kind}");
+            await WriteAckAsync(stdout, ok: false, "unknown-kind", kind: null).ConfigureAwait(false);
+            return;
+        }
+
+        if (!SchemaVersion.IsSupported(message.SchemaVersion))
+        {
+            var detail = message.SchemaVersion < SchemaVersion.Min
+                ? "schema-too-old"
+                : "schema-too-new";
+            Logger.Warn($"unsupported schema version: {message.SchemaVersion} (range {SchemaVersion.Min}..{SchemaVersion.Max})");
+            await WriteAckAsync(stdout, ok: false, detail, kind: null).ConfigureAwait(false);
+            return;
+        }
+
+        if (message.State is null)
+        {
+            Logger.Warn("snapshot kind frame had null state");
+            await WriteAckAsync(stdout, ok: false, "null-snapshot", kind: null).ConfigureAwait(false);
             return;
         }
 
         try
         {
-            AtomicJsonFile.Write(AppPaths.SnapshotFile, snapshot, SnapshotJsonContext.Default.BucketSnapshot);
-            Logger.Info($"persisted snapshot with {snapshot.Buckets.Count} buckets, source caller={_callerOrigin}");
-            await WriteAckAsync(stdout, ok: true, "ok").ConfigureAwait(false);
+            AtomicJsonFile.Write(AppPaths.SnapshotFile, message, SnapshotJsonContext.Default.SnapshotMessage);
+            var claudeCount = message.State.Providers.Claude?.Buckets?.Count ?? 0;
+            var codexCount = message.State.Providers.Codex?.Buckets?.Count ?? 0;
+            Logger.Info($"persisted snapshot — claude={claudeCount} codex={codexCount} caller={_callerOrigin}");
+            await WriteAckAsync(stdout, ok: true, "ok", kind: null).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             Logger.Error("snapshot write failed", ex);
-            await WriteAckAsync(stdout, ok: false, "write-failed").ConfigureAwait(false);
+            await WriteAckAsync(stdout, ok: false, "write-failed", kind: null).ConfigureAwait(false);
         }
     }
 
-    private static async Task WriteAckAsync(Stream stdout, bool ok, string detail)
+    private static async Task WriteAckAsync(Stream stdout, bool ok, string detail, string? kind)
     {
         var version = HostMetadata.Version;
         var ts = DateTimeOffset.UtcNow.ToString("O");
+        var kindFragment = kind is null ? string.Empty : $"\"kind\":\"{kind}\",";
         // Forward-compat handshake — extension can read these to decide whether
         // to upgrade its payload shape. Schema range is the NMH-supported span.
-        var json = $"{{\"ok\":{(ok ? "true" : "false")},\"detail\":\"{detail}\","
+        var json = $"{{\"ok\":{(ok ? "true" : "false")},{kindFragment}\"detail\":\"{detail}\","
                  + $"\"nmhVersion\":\"{version}\",\"schemaMin\":{HostMetadata.SchemaMin},"
                  + $"\"schemaMax\":{HostMetadata.SchemaMax},\"serverTime\":\"{ts}\"}}";
         var bytes = Encoding.UTF8.GetBytes(json);
