@@ -33,16 +33,22 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
     }
 
     public string ExtensionStepLabel => _last.ExtensionLikelyInstalled
-        ? "✓ AI-Usage_Tracker extension installed"
-        : "○ Install the AI-Usage_Tracker extension";
+        ? "Extension ready"
+        : "Install AI-Usage_Tracker";
 
     public string NmhStepLabel => _last.NmhRegistered
-        ? "✓ Native messaging registered"
-        : "○ Register native messaging (run QuotaGlass.NMH.exe --register)";
+        ? "Native host registered"
+        : "Register the native host";
 
     public string SnapshotStepLabel => _last.FirstSnapshotReceived
-        ? "✓ First snapshot received"
-        : "○ Waiting for first snapshot…";
+        ? "Usage snapshot received"
+        : "Waiting for first usage snapshot";
+
+    public bool ExtensionReady => _last.ExtensionLikelyInstalled;
+
+    public bool NmhReady => _last.NmhRegistered;
+
+    public bool SnapshotReady => _last.FirstSnapshotReceived;
 
     public string ExtensionInstallUrl => "https://github.com/SysAdminDoc/AI-Usage_Tracker/releases/latest";
 
@@ -95,6 +101,9 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
         Raise(nameof(ExtensionStepLabel));
         Raise(nameof(NmhStepLabel));
         Raise(nameof(SnapshotStepLabel));
+        Raise(nameof(ExtensionReady));
+        Raise(nameof(NmhReady));
+        Raise(nameof(SnapshotReady));
     }
 
     private void Raise([CallerMemberName] string? prop = null)

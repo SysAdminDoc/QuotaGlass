@@ -5,30 +5,34 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
 
-    <!-- NX-10 embedded log panel (collapsed by default). DataContext = LogPanelViewModel. -->
     <StackPanel>
         <Button Style="{StaticResource HitButton}"
                 Content="{Binding ToggleLabel}"
                 Click="OnToggle"
                 HorizontalAlignment="Left"
                 Margin="0,8,0,0" />
-        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+        <Border BorderBrush="{StaticResource Brush.Card.Divider}"
                 BorderThickness="1"
-                CornerRadius="6"
-                Padding="6"
+                CornerRadius="8"
+                Padding="8"
                 Margin="0,4,0,0"
                 Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
-            <TextBox Text="{Binding Tail, Mode=OneWay}"
-                     IsReadOnly="True"
-                     FontFamily="{StaticResource Font.Mono}"
-                     FontSize="10"
-                     Foreground="{StaticResource Brush.Card.MutedText}"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     TextWrapping="NoWrap"
-                     VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Auto"
-                     MaxHeight="160" />
+            <StackPanel>
+                <TextBlock Style="{StaticResource CaptionText}"
+                           Margin="0,0,0,6"
+                           Text="Recent widget and native-host events." />
+                <TextBox Text="{Binding Tail, Mode=OneWay}"
+                         IsReadOnly="True"
+                         FontFamily="{StaticResource Font.Mono}"
+                         FontSize="10"
+                         Foreground="{StaticResource Brush.Card.MutedText}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         MaxHeight="160" />
+            </StackPanel>
         </Border>
     </StackPanel>
 </UserControl>

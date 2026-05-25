@@ -22,7 +22,7 @@ public sealed class CalendarViewModel : INotifyPropertyChanged
         set { if (_isExpanded == value) return; _isExpanded = value; Raise(); Raise(nameof(ToggleLabel)); }
     }
 
-    public string ToggleLabel => _isExpanded ? "˄ Hide 7-day reset calendar" : "˅ Show 7-day reset calendar";
+    public string ToggleLabel => _isExpanded ? "Hide reset calendar" : "Reset calendar";
 
     public void Toggle() => IsExpanded = !IsExpanded;
 

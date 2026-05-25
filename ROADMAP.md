@@ -12,6 +12,7 @@ This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGEL
 - [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md) - post-v0.4.0 audit.
 - [RESEARCH_PASS_5.md](RESEARCH_PASS_5.md) - post-v0.8.0 audit and v0.9/v0.10 queue.
 - [RESEARCH_PASS_6.md](RESEARCH_PASS_6.md) - production hardening audit: diagnostics, schema merge, alarms, updater, tray, settings, docs, release workflow.
+- [RESEARCH_PASS_7.md](RESEARCH_PASS_7.md) - premium UI/UX polish audit: component system, hierarchy, setup/settings copy, scrollers, empty states, focus/hover treatment.
 - [docs/research.md](docs/research.md) - original scaffold dossier.
 - [docs/extension-integration.md](docs/extension-integration.md) - wire schema spec.
 - [docs/bridge-integration.md](docs/bridge-integration.md) - extension-side drop-in code.

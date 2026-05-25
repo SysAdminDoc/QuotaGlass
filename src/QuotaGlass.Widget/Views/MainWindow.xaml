@@ -5,7 +5,7 @@
         xmlns:v="clr-namespace:QuotaGlass.Widget.Views"
         xmlns:vm="clr-namespace:QuotaGlass.Widget.ViewModels"
         Title="QuotaGlass"
-        Width="340"
+        Width="360"
         SizeToContent="Height"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -20,16 +20,13 @@
         Top="40">
 
     <Window.Resources>
-        <!-- v0.9 R5-N3 — HitButton style moved into Theme/Controls.xaml so
-             extracted UserControls (SetupCard / Calendar / Log) resolve it
-             via the app-level merged dictionary. -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
 
     <Border Style="{StaticResource WindowChromeBorder}"
             MouseLeftButtonDown="OnChromeMouseDown">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.55" Color="Black" />
+            <DropShadowEffect BlurRadius="22" ShadowDepth="0" Opacity="0.42" Color="Black" />
         </Border.Effect>
 
         <Grid>
@@ -41,62 +38,98 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!--  Title bar  -->
-            <Grid Grid.Row="0" Margin="2,0,2,10">
+            <Grid Grid.Row="0" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
-                           Style="{StaticResource HeaderText}"
-                           Text="QuotaGlass"
-                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="8"
+                            Height="8"
+                            CornerRadius="4"
+                            Background="{StaticResource Brush.Accent.Strong}"
+                            Margin="0,0,8,0" />
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource HeaderText}" Text="QuotaGlass" />
+                        <TextBlock Style="{StaticResource CaptionText}" Text="Usage window monitor" />
+                    </StackPanel>
+                </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="–" Style="{StaticResource HitButton}" Click="OnMinimizeClick" ToolTip="Minimize" />
-                    <Button Content="×" Style="{StaticResource HitButton}" Click="OnCloseClick" ToolTip="Hide widget" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Content="–"
+                            Style="{StaticResource IconButton}"
+                            Click="OnMinimizeClick"
+                            ToolTip="Minimize"
+                            AutomationProperties.Name="Minimize" />
+                    <Button Content="×"
+                            Style="{StaticResource IconButton}"
+                            Click="OnCloseClick"
+                            ToolTip="Hide widget"
+                            AutomationProperties.Name="Hide widget" />
                 </StackPanel>
             </Grid>
 
-            <!-- F-N3 Setup checklist — extracted to UserControl in v0.9. -->
             <v:SetupCardView Grid.Row="1" DataContext="{Binding Setup}" />
 
-            <!--  Bucket cards  -->
-            <ItemsControl Grid.Row="2" ItemsSource="{Binding Buckets}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:BucketViewModel}">
-                        <Border Style="{StaticResource CardBorder}"
-                                Cursor="Hand"
-                                Focusable="True"
-                                KeyboardNavigation.IsTabStop="True"
-                                MouseLeftButtonUp="OnCardClicked"
-                                MouseRightButtonUp="OnCardRightClicked"
-                                KeyDown="OnCardKeyDown"
-                                AutomationProperties.Name="{Binding HoverTooltip}"
-                                AutomationProperties.HelpText="Click or press Enter to open the provider's analytics page. Right-click or press Shift+F10 to snooze.">
-                            <Border.ToolTip>
-                                <ToolTip>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding HoverTooltip}" />
-                                        <TextBlock Style="{StaticResource SubText}"
-                                                   Margin="0,4,0,0"
-                                                   Text="{Binding PaceLabel}"
-                                                   Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
-                                        <TextBlock Style="{StaticResource MutedText}"
-                                                   Margin="0,4,0,0"
-                                                   Text="Click → open analytics · Right-click → mute / snooze" />
-                                    </StackPanel>
-                                </ToolTip>
-                            </Border.ToolTip>
+            <Border Grid.Row="2"
+                    Style="{StaticResource CardBorder}"
+                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource HeaderText}" Text="Waiting for usage data" />
+                    <TextBlock Style="{StaticResource SubText}"
+                               Margin="0,6,0,0"
+                               TextWrapping="Wrap"
+                               Text="QuotaGlass will populate this space as soon as the extension or local credential poller sends a snapshot." />
+                    <TextBlock Style="{StaticResource CaptionText}"
+                               Margin="0,8,0,0"
+                               Text="Tip: use the setup card above if this is your first run." />
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="2"
+                          MaxHeight="260"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding HasBuckets, Converter={StaticResource BoolToVisibility}}">
+                <ItemsControl ItemsSource="{Binding Buckets}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:BucketViewModel}">
+                            <Border Style="{StaticResource InteractiveCardBorder}"
+                                    Cursor="Hand"
+                                    Focusable="True"
+                                    KeyboardNavigation.IsTabStop="True"
+                                    MouseLeftButtonUp="OnCardClicked"
+                                    MouseRightButtonUp="OnCardRightClicked"
+                                    KeyDown="OnCardKeyDown"
+                                    AutomationProperties.Name="{Binding HoverTooltip}"
+                                    AutomationProperties.HelpText="Enter opens analytics. Shift F10 opens snooze actions.">
+                                <Border.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel MaxWidth="260">
+                                            <TextBlock Style="{StaticResource HeaderText}" Text="{Binding HoverTooltip}" TextWrapping="Wrap" />
+                                            <TextBlock Style="{StaticResource SubText}"
+                                                       Margin="0,6,0,0"
+                                                       Text="{Binding PaceLabel}"
+                                                       Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
+                                            <TextBlock Style="{StaticResource CaptionText}"
+                                                       Margin="0,6,0,0"
+                                                       Text="Click opens analytics. Right-click opens snooze actions." />
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Border.ToolTip>
+
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <!--  Ring with center percent overlay  -->
-                                <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0" Opacity="{Binding StaleOpacity}">
+                                <Grid Grid.Column="0"
+                                      Width="82"
+                                      Height="82"
+                                      Margin="0,0,14,0"
+                                      Opacity="{Binding StaleOpacity}">
                                     <c:RadialRing Percent="{Binding Percent}"
                                                   Thickness="9"
                                                   PaceMarkerPercent="{Binding PaceMarkerPercent}"
@@ -107,259 +140,225 @@
                                                   SafeBrush="{StaticResource Brush.Ring.Safe}"
                                                   WarnBrush="{StaticResource Brush.Ring.Warn}"
                                                   DangerBrush="{StaticResource Brush.Ring.Danger}" />
-                                    <!-- R3-P2-05: Viewbox-wrap so the center text scales to fit at every DPI -->
-                                    <Viewbox Stretch="Uniform" Margin="14">
+                                    <Viewbox Stretch="Uniform" Margin="15">
                                         <TextBlock Style="{StaticResource RingCenter}" Text="{Binding TimeUntilResetLabel}" />
                                     </Viewbox>
                                 </Grid>
 
-                                <!--  Labels  -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Style="{StaticResource HeaderText}">
-                                        <Run Text="{Binding Provider, Mode=OneWay}" />
-                                        <Run Text=" — " />
-                                        <Run Text="{Binding Label, Mode=OneWay}" />
-                                    </TextBlock>
-                                    <TextBlock Style="{StaticResource SubText}" Margin="0,2,0,0" Text="{Binding PercentLabel}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Style="{StaticResource HeaderText}"
+                                                   Text="{Binding Label}"
+                                                   TextWrapping="NoWrap" />
+                                        <TextBlock Grid.Column="1"
+                                                   Style="{StaticResource SubText}"
+                                                   Margin="8,0,0,0"
+                                                   Text="{Binding PercentLabel}" />
+                                    </Grid>
+
+                                    <WrapPanel Margin="0,5,0,0">
+                                        <Border Style="{StaticResource PillBorder}" Margin="0,0,6,4">
+                                            <TextBlock Style="{StaticResource PillText}" Text="{Binding Provider}" />
+                                        </Border>
+                                        <Border Style="{StaticResource PillBorder}" Margin="0,0,6,4">
+                                            <TextBlock Style="{StaticResource PillText}" Text="{Binding KindBadge}" />
+                                        </Border>
+                                        <Border Style="{StaticResource PillBorder}"
+                                                Margin="0,0,6,4"
+                                                Visibility="{Binding HasAccountLabel, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Style="{StaticResource PillText}" Text="{Binding AccountLabel}" />
+                                        </Border>
+                                    </WrapPanel>
+
                                     <TextBlock Style="{StaticResource SubText}" Text="{Binding ResetAtLabel}" />
-                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" Text="{Binding KindBadge}" />
-                                    <TextBlock Style="{StaticResource MutedText}"
+                                    <TextBlock Style="{StaticResource SubText}"
+                                               Margin="0,3,0,0"
                                                Text="{Binding PaceLabel}"
                                                Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
-                                    <!-- NX-08: 24-sample sparkline rendered when HistoryStore has ≥2 samples for this bucket id. -->
                                     <c:Sparkline Samples="{Binding SparklineData}"
                                                  LineBrush="{StaticResource Brush.Card.MutedText}"
                                                  Height="18"
-                                                 Margin="0,6,0,0"
+                                                 Margin="0,7,0,0"
                                                  Visibility="{Binding HasSparkline, Converter={StaticResource BoolToVisibility}}" />
                                 </StackPanel>
                             </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
 
-            <!--  Settings panel (embedded, expand-down)  -->
-            <StackPanel Grid.Row="3" Margin="0,4,0,0">
+            <StackPanel Grid.Row="3" Margin="0,2,0,0">
                 <Button Style="{StaticResource HitButton}"
-                        Content="{Binding Settings.ToggleGlyph}"
+                        Content="{Binding Settings.ToggleLabel}"
                         Click="OnToggleSettings"
-                        HorizontalAlignment="Right" />
+                        HorizontalAlignment="Right"
+                        ToolTip="Show or hide preferences" />
+
                 <Border Style="{StaticResource CardBorder}"
                         Margin="0,4,0,0"
                         Visibility="{Binding Settings.IsExpanded, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel>
-                        <!-- v0.8 — sub-section: Alarms -->
-                        <Expander Header="Alarms" IsExpanded="True"
-                                  Foreground="{StaticResource Brush.Card.HeaderText}">
-                            <StackPanel Margin="0,4,0,8">
-                        <CheckBox Content="Notification alarms enabled"
-                                  Foreground="{StaticResource Brush.Card.BodyText}"
-                                  Margin="0,0,0,6"
-                                  IsChecked="{Binding Settings.AlarmsEnabled}" />
-                        <CheckBox Content="Fire pace (burn-rate) warning toasts"
-                                  Foreground="{StaticResource Brush.Card.BodyText}"
-                                  Margin="0,0,0,6"
-                                  ToolTip="Triggers a single U2 toast per reset window when the forecast says the bucket will exhaust before reset."
-                                  IsChecked="{Binding Settings.PaceEnabled}" />
-                        <CheckBox Content="Respect Windows Focus Assist / DND"
-                                  Foreground="{StaticResource Brush.Card.BodyText}"
-                                  Margin="0,0,0,6"
-                                  ToolTip="Suppresses alarm toasts while Focus Assist, fullscreen apps, or presentation mode are active. Suppressed tiers are marked fired so they don't replay later."
-                                  IsChecked="{Binding Settings.RespectFocusAssist}" />
-                        <TextBlock Style="{StaticResource SubText}"
-                                   Text="Reset ladder (uncheck to suppress a tier):"
-                                   Margin="0,6,0,2" />
-                        <ItemsControl ItemsSource="{Binding Settings.LadderTiers}" Margin="0,2,0,4">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vm:LadderTierViewModel}">
-                                    <CheckBox Content="{Binding Label}"
-                                              IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                              Foreground="{StaticResource Brush.Card.BodyText}"
-                                              Margin="0,2,10,2"
-                                              ToolTip="Toggle this lead-time toast" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <Grid Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Style="{StaticResource SubText}"
-                                       VerticalAlignment="Center"
-                                       Text="Custom sound:" />
-                            <TextBlock Grid.Column="1"
-                                       Style="{StaticResource MutedText}"
-                                       VerticalAlignment="Center"
-                                       Margin="6,0,6,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Text="{Binding Settings.CustomWavPath}" />
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource HitButton}"
-                                    Content="Pick…"
-                                    Click="OnPickWavClicked" />
-                        </Grid>
-                        <Grid Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Style="{StaticResource SubText}"
-                                       VerticalAlignment="Center"
-                                       Text="Reset (R2) sound:" />
-                            <TextBlock Grid.Column="1"
-                                       Style="{StaticResource MutedText}"
-                                       VerticalAlignment="Center"
-                                       Margin="6,0,6,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Text="{Binding Settings.ResetWavPath}" />
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource HitButton}"
-                                    Content="Pick…"
-                                    Click="OnPickResetWavClicked" />
-                        </Grid>
-                        <Grid Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Style="{StaticResource SubText}"
-                                       VerticalAlignment="Center"
-                                       Text="Zero-state (R3) sound:" />
-                            <TextBlock Grid.Column="1"
-                                       Style="{StaticResource MutedText}"
-                                       VerticalAlignment="Center"
-                                       Margin="6,0,6,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Text="{Binding Settings.ZeroStateWavPath}" />
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource HitButton}"
-                                    Content="Pick…"
-                                    Click="OnPickZeroStateWavClicked" />
-                        </Grid>
+                        <Expander Header="Alarms" IsExpanded="True" Foreground="{StaticResource Brush.Card.HeaderText}">
+                            <StackPanel Margin="0,8,0,10">
+                                <TextBlock Style="{StaticResource SubText}"
+                                           Margin="0,0,0,8"
+                                           Text="Choose when QuotaGlass interrupts you and how each alarm sounds." />
+                                <CheckBox Content="Enable notification alarms"
+                                          Margin="0,0,0,6"
+                                          IsChecked="{Binding Settings.AlarmsEnabled}" />
+                                <CheckBox Content="Warn when pace will exhaust a window"
+                                          Margin="0,0,0,6"
+                                          ToolTip="Sends one pace toast per reset window when burn rate predicts exhaustion before reset."
+                                          IsChecked="{Binding Settings.PaceEnabled}" />
+                                <CheckBox Content="Respect Focus Assist and fullscreen modes"
+                                          Margin="0,0,0,8"
+                                          ToolTip="Suppresses alarm toasts while Focus Assist, fullscreen apps, or presentation mode are active."
+                                          IsChecked="{Binding Settings.RespectFocusAssist}" />
+
+                                <TextBlock Style="{StaticResource SubText}"
+                                           Text="Alarm ladder"
+                                           Margin="0,4,0,2" />
+                                <ItemsControl ItemsSource="{Binding Settings.LadderTiers}" Margin="0,2,0,8">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:LadderTierViewModel}">
+                                            <CheckBox Content="{Binding Label}"
+                                                      IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                      Margin="0,2,10,2"
+                                                      ToolTip="Toggle this lead-time toast" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Grid Margin="0,2,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Style="{StaticResource SubText}" VerticalAlignment="Center" Text="Alarm sound" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis" Text="{Binding Settings.CustomWavLabel}" />
+                                    <Button Grid.Column="2" Style="{StaticResource HitButton}" Content="Choose" Click="OnPickWavClicked" />
+                                </Grid>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Style="{StaticResource SubText}" VerticalAlignment="Center" Text="Reset sound" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis" Text="{Binding Settings.ResetWavLabel}" />
+                                    <Button Grid.Column="2" Style="{StaticResource HitButton}" Content="Choose" Click="OnPickResetWavClicked" />
+                                </Grid>
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Style="{StaticResource SubText}" VerticalAlignment="Center" Text="Exhausted sound" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis" Text="{Binding Settings.ZeroStateWavLabel}" />
+                                    <Button Grid.Column="2" Style="{StaticResource HitButton}" Content="Choose" Click="OnPickZeroStateWavClicked" />
+                                </Grid>
                             </StackPanel>
                         </Expander>
 
-                        <!-- v0.8 — sub-section: Display -->
-                        <Expander Header="Display" IsExpanded="False"
-                                  Foreground="{StaticResource Brush.Card.HeaderText}"
-                                  Margin="0,4,0,0">
-                            <StackPanel Margin="0,4,0,8">
-                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Style="{StaticResource SubText}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,10,0"
-                                       Text="Theme:" />
-                            <RadioButton Content="Mocha (dark)"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         Margin="0,0,10,0"
-                                         GroupName="QGTheme"
-                                         IsChecked="{Binding Settings.IsDarkTheme, Mode=TwoWay}" />
-                            <RadioButton Content="Latte (light)"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         Margin="0,0,10,0"
-                                         GroupName="QGTheme"
-                                         IsChecked="{Binding Settings.IsLightTheme, Mode=TwoWay}" />
-                            <RadioButton Content="High contrast"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         Margin="0,0,10,0"
-                                         GroupName="QGTheme"
-                                         ToolTip="Binds every brush to Windows SystemColors so the active HC scheme drives every pixel."
-                                         IsChecked="{Binding Settings.IsHighContrastTheme, Mode=TwoWay}" />
-                            <RadioButton Content="Follow system"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         GroupName="QGTheme"
-                                         ToolTip="Picks Mocha / Latte / High contrast at launch based on Windows accessibility + apps-use-light-theme preference."
-                                         IsChecked="{Binding Settings.IsSystemTheme, Mode=TwoWay}" />
-                        </WrapPanel>
-                        <Grid Margin="0,6,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Style="{StaticResource SubText}" Text="Warn at %"
-                                           ToolTip="Ring turns peach above this percentage." />
-                                <TextBox Text="{Binding Settings.WarnPercent, UpdateSourceTrigger=LostFocus}"
-                                         Background="{StaticResource Brush.Window.Background}"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         BorderBrush="{StaticResource Brush.Card.Border}"
-                                         ToolTip="Ring turns peach above this percentage." />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <TextBlock Style="{StaticResource SubText}" Text="Danger at %"
-                                           ToolTip="Ring turns red above this percentage." />
-                                <TextBox Text="{Binding Settings.DangerPercent, UpdateSourceTrigger=LostFocus}"
-                                         Background="{StaticResource Brush.Window.Background}"
-                                         Foreground="{StaticResource Brush.Card.BodyText}"
-                                         BorderBrush="{StaticResource Brush.Card.Border}"
-                                         ToolTip="Ring turns red above this percentage." />
-                            </StackPanel>
-                        </Grid>
+                        <Expander Header="Display" IsExpanded="False" Foreground="{StaticResource Brush.Card.HeaderText}" Margin="0,4,0,0">
+                            <StackPanel Margin="0,8,0,10">
+                                <TextBlock Style="{StaticResource SubText}" Margin="0,0,0,8" Text="Tune theme and ring color thresholds." />
+                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <RadioButton Content="Mocha" Margin="0,0,12,4" GroupName="QGTheme" IsChecked="{Binding Settings.IsDarkTheme, Mode=TwoWay}" />
+                                    <RadioButton Content="Latte" Margin="0,0,12,4" GroupName="QGTheme" IsChecked="{Binding Settings.IsLightTheme, Mode=TwoWay}" />
+                                    <RadioButton Content="High contrast" Margin="0,0,12,4" GroupName="QGTheme" IsChecked="{Binding Settings.IsHighContrastTheme, Mode=TwoWay}" />
+                                    <RadioButton Content="System" Margin="0,0,0,4" GroupName="QGTheme" IsChecked="{Binding Settings.IsSystemTheme, Mode=TwoWay}" />
+                                </WrapPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Style="{StaticResource SubText}" Text="Warn at %" />
+                                        <TextBox Style="{StaticResource FieldTextBox}"
+                                                 Text="{Binding Settings.WarnPercent, UpdateSourceTrigger=LostFocus}"
+                                                 ToolTip="Ring turns warm above this percentage." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Style="{StaticResource SubText}" Text="Danger at %" />
+                                        <TextBox Style="{StaticResource FieldTextBox}"
+                                                 Text="{Binding Settings.DangerPercent, UpdateSourceTrigger=LostFocus}"
+                                                 ToolTip="Ring turns red above this percentage." />
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Expander>
 
-                        <!-- v0.8 — sub-section: Integration -->
-                        <Expander Header="Integration" IsExpanded="False"
-                                  Foreground="{StaticResource Brush.Card.HeaderText}"
-                                  Margin="0,4,0,0">
-                            <StackPanel Margin="0,4,0,8">
-                        <CheckBox Content="Launch QuotaGlass at logon"
-                                  Foreground="{StaticResource Brush.Card.BodyText}"
-                                  Margin="0,0,0,6"
-                                  IsChecked="{Binding Settings.Autostart}" />
-                        <!-- F-N7 — shell-command webhook -->
-                        <TextBlock Style="{StaticResource SubText}"
-                                   Text="Webhook command on alarm fire (optional):"
-                                   ToolTip="Runs with cmd /c on each alarm fire. Env vars: QG_PROVIDER, QG_BUCKET_ID, QG_PERCENT, QG_RESET_ISO, QG_TIER. 5 s timeout."
-                                   Margin="0,4,0,2" />
-                        <TextBox Text="{Binding Settings.WebhookCommand, UpdateSourceTrigger=LostFocus}"
-                                 Background="{StaticResource Brush.Window.Background}"
-                                 Foreground="{StaticResource Brush.Card.BodyText}"
-                                 BorderBrush="{StaticResource Brush.Card.Border}"
-                                 ToolTip="e.g. curl -d &quot;%QG_PROVIDER% at %QG_PERCENT%%%&quot; https://ntfy.sh/your-topic" />
+                        <Expander Header="Integration" IsExpanded="False" Foreground="{StaticResource Brush.Card.HeaderText}" Margin="0,4,0,0">
+                            <StackPanel Margin="0,8,0,10">
+                                <TextBlock Style="{StaticResource SubText}" Margin="0,0,0,8" Text="Startup and automation hooks for power users." />
+                                <CheckBox Content="Launch QuotaGlass at logon"
+                                          Margin="0,0,0,8"
+                                          IsChecked="{Binding Settings.Autostart}" />
+                                <TextBlock Style="{StaticResource SubText}"
+                                           Text="Webhook command"
+                                           ToolTip="Runs with cmd /c on each alarm fire. Env vars: QG_PROVIDER, QG_BUCKET_ID, QG_PERCENT, QG_RESET_ISO, QG_TIER." />
+                                <TextBox Style="{StaticResource FieldTextBox}"
+                                         Text="{Binding Settings.WebhookCommand, UpdateSourceTrigger=LostFocus}"
+                                         ToolTip="Example: curl -d &quot;%QG_PROVIDER% at %QG_PERCENT%%%&quot; https://ntfy.sh/your-topic" />
+                                <TextBlock Style="{StaticResource CaptionText}"
+                                           Margin="0,4,0,0"
+                                           Text="Runs for at most 5 seconds and receives quota details through QG_* environment variables." />
                             </StackPanel>
                         </Expander>
 
-                        <!-- v0.8 — sub-section: Advanced (calendar + log panel + reset) -->
-                        <Expander Header="Advanced" IsExpanded="False"
-                                  Foreground="{StaticResource Brush.Card.HeaderText}"
-                                  Margin="0,4,0,0">
-                            <StackPanel Margin="0,4,0,8">
-                                <!-- L-02 + NX-10 panels — extracted to UserControls in v0.8. -->
+                        <Expander Header="Advanced" IsExpanded="False" Foreground="{StaticResource Brush.Card.HeaderText}" Margin="0,4,0,0">
+                            <StackPanel Margin="0,8,0,10">
                                 <v:CalendarPanelView DataContext="{Binding Calendar}" />
                                 <v:LogPanelView DataContext="{Binding LogPanel}" />
 
-                                <!-- R4-Q-11 — reset all settings (excluding position) to factory defaults -->
+                                <Border Height="1" Background="{StaticResource Brush.Card.Divider}" Margin="0,10,0,8" />
                                 <Button Style="{StaticResource HitButton}"
-                                        Content="Reset settings to defaults"
+                                        Content="Reset settings"
                                         Click="OnResetSettings"
                                         HorizontalAlignment="Left"
-                                        Margin="0,8,0,0"
-                                        ToolTip="Restores alarm ladder, thresholds, theme, etc. to factory defaults. Position is preserved." />
+                                        ToolTip="Restores alarm ladder, thresholds, theme, and integration settings. Position and autostart are preserved." />
                             </StackPanel>
                         </Expander>
                     </StackPanel>
                 </Border>
             </StackPanel>
 
-            <!--  Status strip  -->
-            <TextBlock Grid.Row="4"
-                       Style="{StaticResource MutedText}"
-                       Margin="2,4,2,0"
-                       Text="{Binding StatusText}" />
+            <Border Grid.Row="4" Margin="0,4,0,0" CornerRadius="8" Padding="8,5">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.Divider}" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="stale">
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Status.Warning}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="very-stale">
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Status.Danger}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="error">
+                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Status.Danger}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Style="{StaticResource CaptionText}" Text="{Binding StatusText}" />
+            </Border>
         </Grid>
     </Border>
 </Window>

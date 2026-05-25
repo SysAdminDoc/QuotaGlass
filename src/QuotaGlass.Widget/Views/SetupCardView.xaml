@@ -4,40 +4,112 @@
              xmlns:res="clr-namespace:QuotaGlass.Widget.Resources">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Style x:Key="SetupStepDot" TargetType="Border">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{StaticResource Brush.Status.Warning}" />
+        </Style>
     </UserControl.Resources>
 
-    <!-- F-N3 Setup checklist. DataContext = SetupCardViewModel. -->
     <Border Style="{StaticResource CardBorder}"
             Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}"
             Margin="0,0,0,8">
         <StackPanel>
             <TextBlock Style="{StaticResource HeaderText}" Text="{x:Static res:Strings.SetupHeader}" />
             <TextBlock Style="{StaticResource SubText}"
-                       Margin="0,6,0,2"
-                       Text="{Binding ExtensionStepLabel}" />
-            <TextBlock Style="{StaticResource SubText}"
-                       Margin="0,0,0,2"
-                       Text="{Binding NmhStepLabel}" />
-            <TextBlock Style="{StaticResource SubText}"
-                       Margin="0,0,0,6"
-                       Text="{Binding SnapshotStepLabel}" />
-            <StackPanel Orientation="Horizontal">
+                       Margin="0,5,0,10"
+                       TextWrapping="Wrap"
+                       Text="Connect the extension once, then QuotaGlass will keep itself out of the way." />
+
+            <Grid Margin="0,0,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource SetupStepDot}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ExtensionReady}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Status.Success}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <TextBlock Grid.Column="1"
+                           Style="{StaticResource SubText}"
+                           Margin="8,0,0,0"
+                           Text="{Binding ExtensionStepLabel}" />
+            </Grid>
+
+            <Grid Margin="0,0,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource SetupStepDot}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NmhReady}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Status.Success}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <TextBlock Grid.Column="1"
+                           Style="{StaticResource SubText}"
+                           Margin="8,0,0,0"
+                           Text="{Binding NmhStepLabel}" />
+            </Grid>
+
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource SetupStepDot}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SnapshotReady}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Status.Success}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <TextBlock Grid.Column="1"
+                           Style="{StaticResource SubText}"
+                           Margin="8,0,0,0"
+                           Text="{Binding SnapshotStepLabel}" />
+            </Grid>
+
+            <WrapPanel>
                 <Button Content="{x:Static res:Strings.SetupInstallExtension}"
                         Style="{StaticResource HitButton}"
                         Tag="{Binding ExtensionInstallUrl}"
                         Click="OnOpenUrl" />
                 <Button Content="{x:Static res:Strings.SetupRunRegister}"
                         Style="{StaticResource HitButton}"
-                        Click="OnRunRegister" />
+                        Click="OnRunRegister"
+                        Margin="4,0,0,0" />
                 <Button Content="{x:Static res:Strings.SetupHelp}"
                         Style="{StaticResource HitButton}"
                         Tag="{Binding TroubleshootingUrl}"
-                        Click="OnOpenUrl" />
+                        Click="OnOpenUrl"
+                        Margin="4,0,0,0" />
                 <Button Content="{x:Static res:Strings.SetupDismiss24h}"
                         Style="{StaticResource HitButton}"
                         Click="OnDismiss"
+                        Margin="4,0,0,0"
                         ToolTip="{x:Static res:Strings.SetupDismiss24hToolTip}" />
-            </StackPanel>
+            </WrapPanel>
         </StackPanel>
     </Border>
 </UserControl>

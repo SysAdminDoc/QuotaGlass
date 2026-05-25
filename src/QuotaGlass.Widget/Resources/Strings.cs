@@ -38,11 +38,11 @@ public static class Strings
         ["FirstRunBalloonBody"] = "Click the tray icon to show / hide the widget. Right-click for more.",
 
         // Setup card
-        ["SetupHeader"] = "Setup",
+        ["SetupHeader"] = "Finish setup",
         ["SetupInstallExtension"] = "Install extension",
-        ["SetupRunRegister"] = "Run --register",
-        ["SetupHelp"] = "Help",
-        ["SetupDismiss24h"] = "Dismiss 24h",
+        ["SetupRunRegister"] = "Register host",
+        ["SetupHelp"] = "Troubleshooting",
+        ["SetupDismiss24h"] = "Later",
         ["SetupDismiss24hToolTip"] = "Hide the setup card for 24 hours.",
 
         // Settings panel

@@ -5,17 +5,31 @@
         <Setter Property="Background" Value="{StaticResource Brush.Card.Background}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="14,12" />
         <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="InteractiveCardBorder" TargetType="Border" BasedOn="{StaticResource CardBorder}">
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.Card.HoverBackground}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent.Soft}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.FocusBorder}" />
+                <Setter Property="BorderThickness" Value="1.5" />
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="WindowChromeBorder" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Brush.Window.Background}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Window.Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Padding" Value="12" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="14" />
     </Style>
 
     <Style x:Key="HeaderText" TargetType="TextBlock">
@@ -49,6 +63,23 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <Style x:Key="CaptionText" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+        <Setter Property="FontSize" Value="9.5" />
+    </Style>
+
+    <Style x:Key="PillBorder" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.Divider}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="6,2" />
+    </Style>
+
+    <Style x:Key="PillText" TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <Style x:Key="RingPercent" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -63,17 +94,21 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Padding" Value="8,4" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Card.MutedText}" />
         <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="bg"
                             Background="{TemplateBinding Background}"
                             CornerRadius="6"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
@@ -81,6 +116,113 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bg" Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
                             <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bg" Property="BorderBrush" Value="{StaticResource Brush.Card.FocusBorder}" />
+                            <Setter TargetName="bg" Property="BorderThickness" Value="1" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
+                            <Setter Property="Opacity" Value="0.82" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource HitButton}">
+        <Setter Property="MinWidth" Value="28" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="FieldTextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="{StaticResource Brush.Field.Background}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.BodyText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="7,5" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="CaretBrush" Value="{StaticResource Brush.Card.BodyText}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource Brush.Accent.Soft}" />
+        <Setter Property="MinHeight" Value="28" />
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.FocusBorder}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.BodyText}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    </Style>
+
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.BodyText}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource Brush.Window.Background}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.BodyText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Card.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style TargetType="{x:Type ScrollBar}">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="MinWidth" Value="8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.MutedText}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                    <Grid x:Name="Root" Background="Transparent">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb x:Name="Thumb" MinHeight="28">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="{x:Type Thumb}">
+                                            <Border CornerRadius="4"
+                                                    Margin="2"
+                                                    Background="{StaticResource Brush.Card.MutedText}"
+                                                    Opacity="0.52" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" Opacity="0" />
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="Root" Property="Height" Value="8" />
+                            <Setter TargetName="Root" Property="Width" Value="Auto" />
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

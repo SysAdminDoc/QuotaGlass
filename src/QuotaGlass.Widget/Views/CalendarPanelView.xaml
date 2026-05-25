@@ -6,39 +6,43 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
 
-    <!-- L-02 — 7-day next-resets calendar. Bind DataContext = CalendarViewModel. -->
     <StackPanel>
         <Button Style="{StaticResource HitButton}"
                 Content="{Binding ToggleLabel}"
                 Click="OnToggle"
                 HorizontalAlignment="Left"
                 Margin="0,8,0,0" />
-        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+        <Border BorderBrush="{StaticResource Brush.Card.Divider}"
                 BorderThickness="1"
-                CornerRadius="6"
-                Padding="6"
+                CornerRadius="8"
+                Padding="8"
                 Margin="0,4,0,0"
                 Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
-            <ItemsControl ItemsSource="{Binding Days}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:CalendarDayViewModel}">
-                        <StackPanel Margin="0,0,0,6">
-                            <TextBlock Style="{StaticResource HeaderText}"
-                                       Text="{Binding Header}"
-                                       Margin="0,0,0,2" />
-                            <ItemsControl ItemsSource="{Binding Resets}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:CalendarEntry}">
-                                        <TextBlock Style="{StaticResource SubText}"
-                                                   Text="{Binding Display}"
-                                                   Margin="6,0,0,2" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <StackPanel>
+                <TextBlock Style="{StaticResource CaptionText}"
+                           Text="No upcoming resets in the next 7 days."
+                           Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                <ItemsControl ItemsSource="{Binding Days}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CalendarDayViewModel}">
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Style="{StaticResource HeaderText}"
+                                           Text="{Binding Header}"
+                                           Margin="0,0,0,3" />
+                                <ItemsControl ItemsSource="{Binding Resets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:CalendarEntry}">
+                                            <TextBlock Style="{StaticResource SubText}"
+                                                       Text="{Binding Display}"
+                                                       Margin="8,0,0,2" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
     </StackPanel>
 </UserControl>

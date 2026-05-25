@@ -36,7 +36,10 @@
     <SolidColorBrush x:Key="Brush.Window.MicaBackground" Color="{StaticResource Mocha.Base}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.Window.Border" Color="{StaticResource Mocha.Surface1}" />
     <SolidColorBrush x:Key="Brush.Card.Background" Color="{StaticResource Mocha.Mantle}" Opacity="0.92" />
+    <SolidColorBrush x:Key="Brush.Card.HoverBackground" Color="{StaticResource Mocha.Base}" Opacity="0.9" />
     <SolidColorBrush x:Key="Brush.Card.Border" Color="{StaticResource Mocha.Surface0}" />
+    <SolidColorBrush x:Key="Brush.Card.FocusBorder" Color="{StaticResource Mocha.Mauve}" />
+    <SolidColorBrush x:Key="Brush.Card.Divider" Color="{StaticResource Mocha.Surface1}" Opacity="0.7" />
     <SolidColorBrush x:Key="Brush.Card.HeaderText" Color="{StaticResource Mocha.Mauve}" />
     <SolidColorBrush x:Key="Brush.Card.BodyText" Color="{StaticResource Mocha.Text}" />
     <SolidColorBrush x:Key="Brush.Card.SubtleText" Color="{StaticResource Mocha.Subtext1}" />
@@ -50,6 +53,12 @@
 
     <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Mocha.Mauve}" />
     <SolidColorBrush x:Key="Brush.Accent.Soft" Color="{StaticResource Mocha.Lavender}" Opacity="0.2" />
+    <SolidColorBrush x:Key="Brush.Accent.Strong" Color="{StaticResource Mocha.Mauve}" />
+    <SolidColorBrush x:Key="Brush.Field.Background" Color="{StaticResource Mocha.Base}" Opacity="0.82" />
+    <SolidColorBrush x:Key="Brush.Status.Info" Color="{StaticResource Mocha.Blue}" />
+    <SolidColorBrush x:Key="Brush.Status.Warning" Color="{StaticResource Mocha.Peach}" />
+    <SolidColorBrush x:Key="Brush.Status.Danger" Color="{StaticResource Mocha.Red}" />
+    <SolidColorBrush x:Key="Brush.Status.Success" Color="{StaticResource Mocha.Green}" />
 
     <!--  Typography  -->
     <FontFamily x:Key="Font.Default">Segoe UI Variable Text, Segoe UI</FontFamily>

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using QuotaGlass.Widget.Services;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
@@ -33,10 +34,19 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
     public bool IsExpanded
     {
         get => _isExpanded;
-        set { if (_isExpanded == value) return; _isExpanded = value; Raise(); Raise(nameof(ToggleGlyph)); }
+        set
+        {
+            if (_isExpanded == value) return;
+            _isExpanded = value;
+            Raise();
+            Raise(nameof(ToggleGlyph));
+            Raise(nameof(ToggleLabel));
+        }
     }
 
     public string ToggleGlyph => _isExpanded ? "˄ Hide settings" : "˅ Show settings";
+
+    public string ToggleLabel => _isExpanded ? "Hide settings" : "Settings";
 
     public bool AlarmsEnabled
     {
@@ -147,17 +157,23 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         set { _store.Update(s => s.Alarms.CustomWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
     }
 
+    public string CustomWavLabel => SoundLabel(CustomWavPath, "Default notification sound");
+
     public string ResetWavPath
     {
         get => _store.Current.Alarms.ResetWavPath ?? "";
         set { _store.Update(s => s.Alarms.ResetWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
     }
 
+    public string ResetWavLabel => SoundLabel(ResetWavPath, "Default reset sound");
+
     public string ZeroStateWavPath
     {
         get => _store.Current.Alarms.ZeroStateWavPath ?? "";
         set { _store.Update(s => s.Alarms.ZeroStateWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
     }
+
+    public string ZeroStateWavLabel => SoundLabel(ZeroStateWavPath, "Default zero-state sound");
 
     public SettingsPanelViewModel(SettingsStore store)
     {
@@ -261,8 +277,24 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         Raise(nameof(DangerPercent));
         Raise(nameof(LadderLabel));
         Raise(nameof(CustomWavPath));
+        Raise(nameof(CustomWavLabel));
         Raise(nameof(ResetWavPath));
+        Raise(nameof(ResetWavLabel));
         Raise(nameof(ZeroStateWavPath));
+        Raise(nameof(ZeroStateWavLabel));
+    }
+
+    private static string SoundLabel(string path, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return fallback;
+        try
+        {
+            return Path.GetFileName(path);
+        }
+        catch
+        {
+            return path;
+        }
     }
 }
 

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **R5-N2** - `AlarmSchedulerTests` cover R1 fire-once dedup, snooze suppression, Focus Assist suppression, and U3/R3 interaction using an injectable toast sink, clock, and suppression predicate.
 - **MainWindow.xaml.cs split** - tray wiring, update prompting, and bucket snooze context menu logic now live in `TrayCoordinator`, `UpdatePrompt`, and `BucketContextMenuService`.
 - **Pass 6 regression coverage** - Added focused tests for diagnostics redaction, schema v3 merge preservation, multi-account alarm evaluation, toast action argument encoding, updater asset/script guards, setup-card dismissal refresh, calendar ordering, bucket pace marker clamping, and settings reset semantics. Local verification: .NET SDK 9.0.314, 101 passed.
+- **Premium UI polish system** - Theme dictionaries now expose semantic hover, focus, divider, field, status, and strong-accent brushes. `Controls.xaml` adds reusable interactive card, pill, icon button, text field, tooltip, checkbox/radio, and themed scrollbar treatments.
 
 ### Fixed
 
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **README refresh** - README now reflects the v0.9+ feature set, current build/publish paths, direct credential polling, multi-account support, and current test count instead of the old v0.1 pre-release instructions.
 - **Release workflow robustness** - The release job no longer hides missing portable EXEs with `|| true`, ensures `installer/dist` exists, and tolerates the x64/arm64 matrix race when creating the same GitHub release.
+- **Premium UX pass** - Main widget cards now use a clearer hierarchy with provider/kind/account pills, bounded scrolling for long bucket sets, a polished waiting state, calmer setup copy with semantic readiness dots, consistent field styling, improved focus/hover feedback, and refined advanced panel empty/log states.
 
 ## [0.9.0] — 2026-05-25
 

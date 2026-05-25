@@ -53,7 +53,13 @@
                      Color="{DynamicResource {x:Static SystemColors.WindowFrameColorKey}}" />
     <SolidColorBrush x:Key="Brush.Card.Background"
                      Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.HoverBackground"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
     <SolidColorBrush x:Key="Brush.Card.Border"
+                     Color="{DynamicResource {x:Static SystemColors.ControlDarkColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.FocusBorder"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.Divider"
                      Color="{DynamicResource {x:Static SystemColors.ControlDarkColorKey}}" />
     <SolidColorBrush x:Key="Brush.Card.HeaderText"
                      Color="{DynamicResource {x:Static SystemColors.ControlTextColorKey}}" />
@@ -77,6 +83,18 @@
                      Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
     <SolidColorBrush x:Key="Brush.Accent.Soft"
                      Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" Opacity="0.2" />
+    <SolidColorBrush x:Key="Brush.Accent.Strong"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Field.Background"
+                     Color="{DynamicResource {x:Static SystemColors.WindowColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Status.Info"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Status.Warning"
+                     Color="{DynamicResource {x:Static SystemColors.HotTrackColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Status.Danger"
+                     Color="{DynamicResource {x:Static SystemColors.ActiveBorderColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Status.Success"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
 
     <FontFamily x:Key="Font.Default">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas</FontFamily>

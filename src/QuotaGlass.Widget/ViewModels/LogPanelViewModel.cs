@@ -43,7 +43,7 @@ public sealed class LogPanelViewModel : INotifyPropertyChanged
         }
     }
 
-    public string ToggleLabel => _isExpanded ? "˄ Hide log" : "˅ Show log";
+    public string ToggleLabel => _isExpanded ? "Hide logs" : "Logs";
 
     public string Tail
     {

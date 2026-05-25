@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
@@ -85,6 +86,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         Settings = new SettingsPanelViewModel(SettingsStore);
         Setup = new SetupCardViewModel(dispatcher, SettingsStore);
         LogPanel = new LogPanelViewModel(dispatcher);
+        Buckets.CollectionChanged += OnBucketsChanged;
 
         _watcher = new SnapshotWatcher(dispatcher);
         _watcher.SnapshotChanged += OnSnapshot;
@@ -127,6 +129,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 Raise(nameof(ReducedMotion));
             }
         };
+    }
+
+    public bool HasBuckets => Buckets.Count > 0;
+
+    public bool IsEmpty => Buckets.Count == 0;
+
+    private void OnBucketsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        Raise(nameof(HasBuckets));
+        Raise(nameof(IsEmpty));
     }
 
     private void ApplyAlarmSettings()
@@ -328,6 +340,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _countdownTimer.Stop();
         _watcher.Dispose();
         _pipe.Dispose();
+        Buckets.CollectionChanged -= OnBucketsChanged;
     }
 
     private void Raise([CallerMemberName] string? prop = null)
