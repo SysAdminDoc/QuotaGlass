@@ -28,6 +28,8 @@ public sealed class TrayIconService : IDisposable
     public event EventHandler? HideRequested;
     public event EventHandler? RefreshRequested;
     public event EventHandler? SettingsRequested;
+    public event EventHandler? CheckForUpdatesRequested;
+    public event EventHandler? ResetPositionRequested;
     public event EventHandler? QuitRequested;
 
     private readonly Forms.NotifyIcon _icon;
@@ -50,6 +52,11 @@ public sealed class TrayIconService : IDisposable
             (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty)));
         menu.Items.Add(new Forms.ToolStripMenuItem("Settings…", null,
             (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty)));
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(new Forms.ToolStripMenuItem("Check for updates…", null,
+            (_, _) => CheckForUpdatesRequested?.Invoke(this, EventArgs.Empty)));
+        menu.Items.Add(new Forms.ToolStripMenuItem("Reset widget position", null,
+            (_, _) => ResetPositionRequested?.Invoke(this, EventArgs.Empty)));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(new Forms.ToolStripMenuItem("Quit QuotaGlass", null,
             (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty)));

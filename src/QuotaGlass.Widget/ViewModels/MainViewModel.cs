@@ -21,6 +21,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private readonly DispatcherTimer _countdownTimer;
     private readonly AlarmScheduler? _alarms;
     private readonly PaceCalculator _pace = new();
+    private readonly HistoryStore _history = new();
     private DateTimeOffset? _lastSnapshotTs;
     private bool _isStale;
     private string _statusText = "Starting up…";
@@ -35,9 +36,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     /// </summary>
     public ObservableCollection<BucketViewModel> Buckets { get; } = new();
 
+    public HistoryStore History => _history;
+
     public SetupCardViewModel Setup { get; }
 
     public SettingsPanelViewModel Settings { get; }
+
+    public LogPanelViewModel LogPanel { get; }
 
     public SettingsStore SettingsStore { get; }
 
@@ -73,7 +78,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         SettingsStore = settingsStore ?? new SettingsStore();
         Settings = new SettingsPanelViewModel(SettingsStore);
-        Setup = new SetupCardViewModel(dispatcher);
+        Setup = new SetupCardViewModel(dispatcher, SettingsStore);
+        LogPanel = new LogPanelViewModel(dispatcher);
 
         _watcher = new SnapshotWatcher(dispatcher);
         _watcher.SnapshotChanged += OnSnapshot;
@@ -109,6 +115,20 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _alarms.CustomWavPath = s.CustomWavPath;
         _alarms.ResetWavPath = s.ResetWavPath;
         _alarms.ZeroStateWavPath = s.ZeroStateWavPath;
+        _alarms.SnoozedUntil = new Dictionary<string, DateTimeOffset>(s.SnoozedBucketsUntilUtc);
+    }
+
+    public void SnoozeBucket(string bucketId, TimeSpan duration)
+    {
+        if (string.IsNullOrEmpty(bucketId)) return;
+        var until = DateTimeOffset.UtcNow + duration;
+        SettingsStore.Update(s => s.Alarms.SnoozedBucketsUntilUtc[bucketId] = until);
+    }
+
+    public void UnsnoozeBucket(string bucketId)
+    {
+        if (string.IsNullOrEmpty(bucketId)) return;
+        SettingsStore.Update(s => s.Alarms.SnoozedBucketsUntilUtc.Remove(bucketId));
     }
 
     private void UpdateStaleness()
@@ -180,6 +200,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 vm.Apply(key, bucket);
             }
             vm.SetPace(_pace.Forecast(bucket.Id, bucket.PercentUsed, now, bucket.ResetIso));
+            // R3-P2-02 — feed the durable history buffer that powers NX-08
+            // sparklines. Dedupe by snapshot ts inside HistoryStore.
+            _history.AppendSample(bucket.Id, message.Timestamp, bucket.PercentUsed);
+            vm.SetSparklineData(_history.Read(bucket.Id));
             desiredOrder.Add(vm);
         }
 

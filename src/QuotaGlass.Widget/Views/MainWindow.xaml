@@ -112,6 +112,10 @@
                                 Style="{StaticResource HitButton}"
                                 Tag="{Binding Setup.TroubleshootingUrl}"
                                 Click="OnOpenUrlFromTag" />
+                        <Button Content="Dismiss 24h"
+                                Style="{StaticResource HitButton}"
+                                Click="OnDismissSetup"
+                                ToolTip="Hide the setup card for 24 hours." />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -123,9 +127,23 @@
                         <Border Style="{StaticResource CardBorder}"
                                 Cursor="Hand"
                                 MouseLeftButtonUp="OnCardClicked"
-                                ToolTip="Open analytics in browser"
-                                AutomationProperties.Name="{Binding PercentLabel}"
-                                AutomationProperties.HelpText="Click to open the provider's analytics page.">
+                                MouseRightButtonUp="OnCardRightClicked"
+                                AutomationProperties.Name="{Binding HoverTooltip}"
+                                AutomationProperties.HelpText="Click to open the provider's analytics page. Right-click for mute / snooze.">
+                            <Border.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding HoverTooltip}" />
+                                        <TextBlock Style="{StaticResource SubText}"
+                                                   Margin="0,4,0,0"
+                                                   Text="{Binding PaceLabel}"
+                                                   Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
+                                        <TextBlock Style="{StaticResource MutedText}"
+                                                   Margin="0,4,0,0"
+                                                   Text="Click → open analytics · Right-click → mute / snooze" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </Border.ToolTip>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -141,7 +159,10 @@
                                                   SafeBrush="{StaticResource Brush.Ring.Safe}"
                                                   WarnBrush="{StaticResource Brush.Ring.Warn}"
                                                   DangerBrush="{StaticResource Brush.Ring.Danger}" />
-                                    <TextBlock Style="{StaticResource RingCenter}" Text="{Binding TimeUntilResetLabel}" />
+                                    <!-- R3-P2-05: Viewbox-wrap so the center text scales to fit at every DPI -->
+                                    <Viewbox Stretch="Uniform" Margin="14">
+                                        <TextBlock Style="{StaticResource RingCenter}" Text="{Binding TimeUntilResetLabel}" />
+                                    </Viewbox>
                                 </Grid>
 
                                 <!--  Labels  -->
@@ -157,6 +178,12 @@
                                     <TextBlock Style="{StaticResource MutedText}"
                                                Text="{Binding PaceLabel}"
                                                Visibility="{Binding HasPace, Converter={StaticResource BoolToVisibility}}" />
+                                    <!-- NX-08: 24-sample sparkline rendered when HistoryStore has ≥2 samples for this bucket id. -->
+                                    <c:Sparkline Samples="{Binding SparklineData}"
+                                                 LineBrush="{StaticResource Brush.Card.MutedText}"
+                                                 Height="18"
+                                                 Margin="0,6,0,0"
+                                                 Visibility="{Binding HasSparkline, Converter={StaticResource BoolToVisibility}}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -182,6 +209,20 @@
                                   Foreground="{StaticResource Brush.Card.BodyText}"
                                   Margin="0,0,0,6"
                                   IsChecked="{Binding Settings.Autostart}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Style="{StaticResource SubText}"
+                                       VerticalAlignment="Center"
+                                       Text="Theme:" />
+                            <RadioButton Content="Mocha (dark)"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         Margin="10,0,10,0"
+                                         GroupName="QGTheme"
+                                         IsChecked="{Binding Settings.IsDarkTheme, Mode=TwoWay}" />
+                            <RadioButton Content="Latte (light)"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         GroupName="QGTheme"
+                                         IsChecked="{Binding Settings.IsLightTheme, Mode=TwoWay}" />
+                        </StackPanel>
                         <TextBlock Style="{StaticResource SubText}"
                                    Text="Reset ladder (uncheck to suppress a tier):"
                                    Margin="0,6,0,2" />
@@ -245,6 +286,30 @@
                                          ToolTip="Ring turns red above this percentage." />
                             </StackPanel>
                         </Grid>
+                        <!-- NX-10 embedded log panel (collapsed by default) -->
+                        <Button Style="{StaticResource HitButton}"
+                                Content="{Binding LogPanel.ToggleLabel}"
+                                Click="OnToggleLog"
+                                HorizontalAlignment="Left"
+                                Margin="0,8,0,0" />
+                        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="6"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding LogPanel.IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                            <TextBox Text="{Binding LogPanel.Tail, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     FontFamily="{StaticResource Font.Mono}"
+                                     FontSize="10"
+                                     Foreground="{StaticResource Brush.Card.MutedText}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     TextWrapping="NoWrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     MaxHeight="160" />
+                        </Border>
                     </StackPanel>
                 </Border>
             </StackPanel>

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using QuotaGlass.Shared;
+using QuotaGlass.Widget.Services;
 
 namespace QuotaGlass.Widget.ViewModels;
 
@@ -11,6 +12,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     private string? _cachedTimeUntilResetLabel;
     private string? _paceLabel;
     private double _staleOpacity = 1.0;
+    private IReadOnlyList<HistorySample> _sparkline = Array.Empty<HistorySample>();
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -84,6 +86,26 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     public bool HasPace => !string.IsNullOrEmpty(_paceLabel);
 
     /// <summary>
+    /// Multiline tooltip body for the ring-hover affordance (NX-09). Includes
+    /// the human-readable plan, source, error (if any), and the resetISO in
+    /// the user's local time.
+    /// </summary>
+    public string HoverTooltip
+    {
+        get
+        {
+            var parts = new List<string>
+            {
+                $"{Provider} — {Label}",
+                $"{PercentLabel}",
+                ResetAtLabel,
+            };
+            if (!string.IsNullOrEmpty(KindBadge)) parts.Add($"({KindBadge})");
+            return string.Join("\n", parts);
+        }
+    }
+
+    /// <summary>
     /// 0..1 dim factor applied to the ring when data is stale. 1.0 = fresh,
     /// 0.5 = stale.
     /// </summary>
@@ -95,6 +117,18 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         _paceLabel = label;
         Raise(nameof(PaceLabel));
         Raise(nameof(HasPace));
+    }
+
+    /// <summary>R3-P2-02 / NX-08 — durable history samples for the sparkline.</summary>
+    public IReadOnlyList<HistorySample> SparklineData => _sparkline;
+
+    public bool HasSparkline => _sparkline.Count >= 2;
+
+    public void SetSparklineData(IReadOnlyList<HistorySample> samples)
+    {
+        _sparkline = samples ?? Array.Empty<HistorySample>();
+        Raise(nameof(SparklineData));
+        Raise(nameof(HasSparkline));
     }
 
     public void SetStale(double opacity)

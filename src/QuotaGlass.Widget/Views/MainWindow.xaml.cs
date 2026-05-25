@@ -34,7 +34,9 @@ public partial class MainWindow : Window
         _tray.ShowRequested += (_, _) => { Show(); Activate(); _tray.OnVisibilityChanged(true); };
         _tray.HideRequested += (_, _) => { Hide(); _tray.OnVisibilityChanged(false); };
         _tray.RefreshRequested += (_, _) => { /* TODO N-15 settings: bump refresh now */ };
-        _tray.SettingsRequested += (_, _) => { Show(); Activate(); /* TODO N-15 expand panel */ };
+        _tray.SettingsRequested += (_, _) => { Show(); Activate(); _vm.Settings.IsExpanded = true; };
+        _tray.CheckForUpdatesRequested += async (_, _) => await CheckForUpdatesAsync();
+        _tray.ResetPositionRequested += (_, _) => ResetWidgetPosition();
         _tray.QuitRequested += (_, _) => System.Windows.Application.Current.Shutdown();
 
         _vm.Buckets.CollectionChanged += (_, _) => RefreshTrayBadge();
@@ -128,6 +130,46 @@ public partial class MainWindow : Window
         if (e.ChangedButton == MouseButton.Left)
         {
             DragMove();
+            SnapToMonitorEdge();
+        }
+    }
+
+    /// <summary>
+    /// NX-04 — after a drag, if the window's left/top/right/bottom landed
+    /// within 16 px of the current monitor's working area, snap to that edge.
+    /// Multi-monitor aware via WPF's Screen API.
+    /// </summary>
+    private void SnapToMonitorEdge()
+    {
+        const double snapThreshold = 16.0;
+        try
+        {
+            var screen = System.Windows.Forms.Screen.FromPoint(
+                new System.Drawing.Point((int)(Left + ActualWidth / 2), (int)(Top + ActualHeight / 2)));
+            var area = screen.WorkingArea;
+
+            // Convert device pixels to DIPs via current DPI scaling.
+            var source = PresentationSource.FromVisual(this);
+            double dpiX = 1.0, dpiY = 1.0;
+            if (source?.CompositionTarget is not null)
+            {
+                dpiX = source.CompositionTarget.TransformToDevice.M11;
+                dpiY = source.CompositionTarget.TransformToDevice.M22;
+            }
+            var areaLeft = area.Left / dpiX;
+            var areaTop = area.Top / dpiY;
+            var areaRight = area.Right / dpiX;
+            var areaBottom = area.Bottom / dpiY;
+
+            if (Math.Abs(Left - areaLeft) <= snapThreshold) Left = areaLeft;
+            else if (Math.Abs((Left + ActualWidth) - areaRight) <= snapThreshold) Left = areaRight - ActualWidth;
+
+            if (Math.Abs(Top - areaTop) <= snapThreshold) Top = areaTop;
+            else if (Math.Abs((Top + ActualHeight) - areaBottom) <= snapThreshold) Top = areaBottom - ActualHeight;
+        }
+        catch
+        {
+            // Snapping is purely cosmetic; never break dragging.
         }
     }
 
@@ -153,6 +195,37 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnCardRightClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: BucketViewModel vm }) return;
+        var bucketId = vm.Id;
+        if (string.IsNullOrEmpty(bucketId)) return;
+
+        var menu = new ContextMenu();
+        void Add(string header, TimeSpan duration)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += (_, _) => _vm.SnoozeBucket(bucketId, duration);
+            menu.Items.Add(item);
+        }
+
+        Add("Snooze 1 hour", TimeSpan.FromHours(1));
+        Add("Snooze 6 hours", TimeSpan.FromHours(6));
+        Add("Snooze 24 hours", TimeSpan.FromHours(24));
+        Add("Snooze until reset", TimeSpan.FromDays(8));
+
+        if (_vm.SettingsStore.Current.Alarms.SnoozedBucketsUntilUtc.ContainsKey(bucketId))
+        {
+            menu.Items.Add(new Separator());
+            var unsnooze = new MenuItem { Header = "Unsnooze" };
+            unsnooze.Click += (_, _) => _vm.UnsnoozeBucket(bucketId);
+            menu.Items.Add(unsnooze);
+        }
+
+        menu.PlacementTarget = sender as UIElement;
+        menu.IsOpen = true;
+    }
+
     private void OnOpenUrlFromTag(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
@@ -163,7 +236,11 @@ public partial class MainWindow : Window
 
     private void OnToggleSettings(object sender, RoutedEventArgs e) => _vm.Settings.Toggle();
 
+    private void OnToggleLog(object sender, RoutedEventArgs e) => _vm.LogPanel.Toggle();
+
     private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile();
+
+    private void OnDismissSetup(object sender, RoutedEventArgs e) => _vm.Setup.DismissForDay();
 
     private void OnRunRegisterClicked(object sender, RoutedEventArgs e)
     {
@@ -194,6 +271,46 @@ public partial class MainWindow : Window
             MessageBox.Show($"Register failed: {ex.Message}", "QuotaGlass",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var update = await UpdateChecker.CheckAsync().ConfigureAwait(true);
+            if (update is null)
+            {
+                MessageBox.Show($"QuotaGlass v{UpdateChecker.CurrentVersion} is up to date.",
+                    "QuotaGlass", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var msg = $"A new version is available: v{update.LatestVersion}\n\n" +
+                      $"Current version: v{UpdateChecker.CurrentVersion}\n" +
+                      $"Download: {update.AssetName}\n\n" +
+                      "Install now? The app will restart automatically.";
+            var result = MessageBox.Show(msg, "QuotaGlass update",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question);
+            if (result == MessageBoxResult.OK)
+            {
+                UpdateChecker.LaunchSelfReplace(update);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Update check failed: {ex.Message}", "QuotaGlass",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void ResetWidgetPosition()
+    {
+        Left = 40;
+        Top = 40;
+        _vm.SettingsStore.Update(s => { s.Widget.X = 40; s.Widget.Y = 40; });
+        if (!IsVisible) { Show(); }
+        Activate();
+        _tray.OnVisibilityChanged(true);
     }
 
     private static void OpenUrlSafe(string url)

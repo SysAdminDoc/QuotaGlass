@@ -79,6 +79,14 @@ public sealed class AlarmSettings
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>
+    /// R3-P2-06 — per-bucket snooze map keyed by Bucket.Id; value is the UTC
+    /// instant at which alarms for that bucket should resume firing. Entries
+    /// with a past timestamp are inactive (no need to GC eagerly).
+    /// </summary>
+    [JsonPropertyName("snoozedBucketsUntilUtc")]
+    public Dictionary<string, DateTimeOffset> SnoozedBucketsUntilUtc { get; set; } = new();
+
     /// <summary>Lead times in MINUTES (zero = at reset). Default ladder
     /// matches the brief: 24h / 12h / 6h / 3h / 1h / 30m / 15m / 5m /
     /// at-reset.</summary>
@@ -121,6 +129,13 @@ public sealed class WidgetSettings
     /// </summary>
     [JsonPropertyName("hasShownFirstRunToast")]
     public bool HasShownFirstRunToast { get; set; }
+
+    /// <summary>
+    /// R3-P1-07 — when set, suppress the first-run Setup card until this
+    /// UTC instant. SetupCardViewModel re-evaluates on every refresh.
+    /// </summary>
+    [JsonPropertyName("setupCardDismissedUntilUtc")]
+    public DateTimeOffset? SetupCardDismissedUntilUtc { get; set; }
 }
 
 public sealed class DisplaySettings

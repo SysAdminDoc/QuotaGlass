@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-In progress for v0.2.0 — see [ROADMAP.md](ROADMAP.md) Phase 2.
+Nothing yet — v0.2.0 just shipped. See [ROADMAP.md](ROADMAP.md) for the v0.3+ queue (multi-account columns, Focus Assist awareness, schema v2 history bundle).
+
+## [0.2.0] — 2026-05-25
+
+Polish + first-true-differentiator release. Closes a large chunk of Pass 3's v0.2.0 queue and most of the original NX-* polish backlog.
+
+### Added
+
+- **R3-P1-01** — Single-instance Mutex (`Global\QuotaGlass.Widget.Instance.*`). A second launch focuses the first window and exits, eliminating the `settings.json` lost-update race. ([App.xaml.cs](src/QuotaGlass.Widget/App.xaml.cs))
+- **R3-P1-02** — `QuotaGlass.NMH.exe --collect-diagnostics` zips logs + redacted snapshot (orgId/accountId scrubbed) + redacted settings (custom WAV paths truncated to last 12 chars) + a meta.txt (OS, NMH version, registry presence) into `%TEMP%\quotaglass-diag-{ts}.zip`. ([NMH/Diagnostics.cs](src/QuotaGlass.NMH/Diagnostics.cs))
+- **R3-P1-03** — U2 pace alarm tier. PaceCalculator output now also feeds AlarmScheduler so a "Claude pace warning" toast fires once per reset window when the burn-rate forecast says the bucket will exhaust before reset. Toggleable via `AlarmScheduler.PaceEnabled`. ([AlarmScheduler.cs](src/QuotaGlass.Widget/Services/AlarmScheduler.cs))
+- **R3-P1-08** — Tray menu "Check for updates…" wires `UpdateChecker.CheckAsync` → confirm dialog → `LaunchSelfReplace`. ([TrayIconService.cs](src/QuotaGlass.Widget/Services/TrayIconService.cs), [MainWindow.xaml.cs](src/QuotaGlass.Widget/Views/MainWindow.xaml.cs))
+- **R3-P1-07** — "Dismiss 24h" button on the Setup card. Persisted as `Widget.SetupCardDismissedUntilUtc` in `settings.json`. ([SetupCardViewModel.cs](src/QuotaGlass.Widget/ViewModels/SetupCardViewModel.cs))
+- **R3-P2-07** — Tray menu "Reset widget position" — resets `Widget.X/Y` to `(40, 40)`. Recovery affordance for unplugged-monitor scenarios. ([MainWindow.xaml.cs](src/QuotaGlass.Widget/Views/MainWindow.xaml.cs))
+- **NX-04** — Edge-snap on drag — within 16 px of the current monitor's working-area edge, the widget snaps. Multi-monitor aware. ([MainWindow.xaml.cs](src/QuotaGlass.Widget/Views/MainWindow.xaml.cs))
+- **R3-P2-05** — DPI-safe ring center text: the countdown is Viewbox-wrapped so it scales to fit at every DPI (no more overflow at ≥200% scaling). ([MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml))
+- **NX-09** — Ring-hover tooltip: multiline panel showing provider, label, percent, reset time, pace forecast, and click/right-click hints. ([MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml), [BucketViewModel.cs](src/QuotaGlass.Widget/ViewModels/BucketViewModel.cs))
+- **R3-P2-06** — Per-bucket mute/snooze via right-click context menu on each card (1h / 6h / 24h / until-reset / unsnooze). Persisted in `Alarms.SnoozedBucketsUntilUtc`. ([MainWindow.xaml.cs](src/QuotaGlass.Widget/Views/MainWindow.xaml.cs), [AlarmScheduler.cs](src/QuotaGlass.Widget/Services/AlarmScheduler.cs))
+- **NX-06** — Catppuccin Latte light theme. Settings panel exposes Mocha / Latte radio buttons; theme persists. ([Theme/CatppuccinLatte.xaml](src/QuotaGlass.Widget/Theme/CatppuccinLatte.xaml), [Services/ThemeService.cs](src/QuotaGlass.Widget/Services/ThemeService.cs))
+- **R3-P2-02 + NX-08** — Durable per-bucket history ring buffer at `%LOCALAPPDATA%\QuotaGlass\history.json` (24 samples × N buckets, atomic write, IOException-tolerant). Rendered as a 24-sample sparkline under each bucket card via a new `Controls/Sparkline.cs` (DependencyProperty-based, ~100 LOC, no third-party charting). ([Services/HistoryStore.cs](src/QuotaGlass.Widget/Services/HistoryStore.cs), [Controls/Sparkline.cs](src/QuotaGlass.Widget/Controls/Sparkline.cs))
+- **NX-10** — Embedded log panel — collapsed-by-default toggle inside the settings panel shows the last 24 lines of today's NMH + Widget logs; auto-refreshes every 3 seconds while open. ([ViewModels/LogPanelViewModel.cs](src/QuotaGlass.Widget/ViewModels/LogPanelViewModel.cs))
+
+### Known limitations carried forward
+
+- F-N1 direct credential reading (Claude Code CLI `.credentials.json` + Codex `auth.json` + Hermes `auth.json`) — large feature; deferred to v0.3.
+- R3-P2-04 Focus Assist awareness — deferred to v0.3.
+- R3-P2-01 multi-account columns within a provider — needs F-N1; deferred to v0.3.
+- MP3 / M4A toast audio (NAudio integration) — deferred to v0.3.
+- Manual screenshots for `assets/screenshots/` — still empty; needs a runtime capture pass.
 
 ## [0.1.1] — 2026-05-25
 

@@ -44,6 +44,33 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         set { _store.Update(s => s.Alarms.Enabled = value); Raise(); }
     }
 
+    /// <summary>NX-06 — `mocha` (dark) or `latte` (light).</summary>
+    public string Theme
+    {
+        get => _store.Current.Display.Theme;
+        set
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            _store.Update(s => s.Display.Theme = value);
+            ThemeService.Apply(value);
+            Raise();
+            Raise(nameof(IsLightTheme));
+            Raise(nameof(IsDarkTheme));
+        }
+    }
+
+    public bool IsLightTheme
+    {
+        get => string.Equals(Theme, ThemeService.ThemeLatte, StringComparison.OrdinalIgnoreCase);
+        set { if (value) Theme = ThemeService.ThemeLatte; }
+    }
+
+    public bool IsDarkTheme
+    {
+        get => !IsLightTheme;
+        set { if (value) Theme = ThemeService.ThemeMocha; }
+    }
+
     public bool Autostart
     {
         get => _store.Current.Widget.Autostart;

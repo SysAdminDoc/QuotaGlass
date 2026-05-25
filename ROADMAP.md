@@ -136,17 +136,22 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 
 ## Phase 2 — v0.2.0 polish + true differentiator
 
-Pass 3 additions interleaved at top.
+Pass 3 additions ✅ — all shipped in v0.2.0 (2026-05-25).
 
-- [ ] **P1 — R3-P1-01** — Single-instance Mutex (`Global\QuotaGlass.Widget`). Second instance focuses the first then exits. Prevents `settings.json` lost-update on double-launch.
-- [ ] **P1 — R3-P1-02** — `QuotaGlass.NMH.exe --collect-diagnostics` zips logs + redacted snapshot/settings + meta.txt into `%TEMP%\quotaglass-diag-{ts}.zip`.
-- [ ] **P1 — R3-P1-03** — Pace alarm tier (U2 family). PaceCalculator output today renders silently in the card footer; route it through AlarmScheduler.
-- [ ] **P1 — R3-P1-08** — Tray "Check for updates" menu entry wiring `UpdateChecker.CheckAsync` + restart confirm.
-- [ ] **P2 — R3-P1-07** — Setup card "dismiss for 24 h" affordance.
-- [ ] **P2 — R3-P2-02** — Widget-side history ring buffer (`%LOCALAPPDATA%\QuotaGlass\history.json`, 24 samples × N buckets) — enables NX-08 sparklines without bumping wire schema.
-- [ ] **P2 — R3-P2-05** — DPI-safe ring center text (Viewbox-wrap so it doesn't overflow at ≥200% scale).
-- [ ] **P2 — R3-P2-06** — Per-bucket mute/snooze (right-click card → snooze 1h/6h/24h/until-reset).
-- [ ] **P2 — R3-P2-07** — Tray menu "Reset position" entry (resets Widget.X/Y to 40,40).
+- [x] **P1 — R3-P1-01** — Single-instance Mutex. ([App.xaml.cs](src/QuotaGlass.Widget/App.xaml.cs))
+- [x] **P1 — R3-P1-02** — `--collect-diagnostics` flag. ([NMH/Diagnostics.cs](src/QuotaGlass.NMH/Diagnostics.cs))
+- [x] **P1 — R3-P1-03** — U2 pace alarm tier. ([AlarmScheduler.cs](src/QuotaGlass.Widget/Services/AlarmScheduler.cs))
+- [x] **P1 — R3-P1-08** — Tray "Check for updates" menu entry. ([MainWindow.xaml.cs](src/QuotaGlass.Widget/Views/MainWindow.xaml.cs))
+- [x] **P2 — R3-P1-07** — Setup card "Dismiss 24h". ([SetupCardViewModel.cs](src/QuotaGlass.Widget/ViewModels/SetupCardViewModel.cs))
+- [x] **P2 — R3-P2-02** — `HistoryStore` ring buffer feeding NX-08. ([HistoryStore.cs](src/QuotaGlass.Widget/Services/HistoryStore.cs))
+- [x] **P2 — R3-P2-05** — DPI-safe Viewbox-wrap of ring center text.
+- [x] **P2 — R3-P2-06** — Per-bucket mute/snooze right-click menu.
+- [x] **P2 — R3-P2-07** — Tray "Reset widget position" entry.
+- [x] **P2 — NX-04** — Edge-snap on drag (16 px threshold).
+- [x] **P2 — NX-06** — Catppuccin Latte light theme + runtime swap.
+- [x] **P2 — NX-08** — Sparkline panel rendered via new `Controls/Sparkline.cs`.
+- [x] **P2 — NX-09** — Multiline ring hover tooltip.
+- [x] **P2 — NX-10** — Embedded log panel inside the settings panel.
 
 - [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates. **(Large feature; warrants its own session.)**
 - [ ] **R2-P1-05** — Hermes credential source (folds into F-N1).

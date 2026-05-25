@@ -14,6 +14,8 @@ if (args.Length > 0)
             return HostRegistrar.Unregister();
         case "--purge":
             return Purge();
+        case "--collect-diagnostics":
+            return Diagnostics.Collect();
         case "--version":
             Console.Error.WriteLine($"QuotaGlass.NMH {typeof(Program).Assembly.GetName().Version}");
             return 0;
@@ -81,6 +83,7 @@ static void PrintHelp()
           QuotaGlass.NMH.exe --register     # install registry keys + manifest for Chrome/Edge/Firefox
           QuotaGlass.NMH.exe --unregister   # remove registry keys + manifest
           QuotaGlass.NMH.exe --purge        # wipe %LOCALAPPDATA%\QuotaGlass\ (does not unregister)
+          QuotaGlass.NMH.exe --collect-diagnostics  # zip logs + redacted snapshot/settings into %TEMP%\quotaglass-diag-*.zip
           QuotaGlass.NMH.exe --version      # print version and exit
         """);
 }

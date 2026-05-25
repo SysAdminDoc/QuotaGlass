@@ -43,6 +43,7 @@ public sealed class AlarmScheduler
     private readonly ToastService _toast;
     private readonly FiredRulesStore _fired;
     private readonly DispatcherTimer _tick;
+    private readonly PaceCalculator _pace = new();
 
     private SnapshotMessage? _latest;
     private readonly Dictionary<string, double> _lastPercentByBucket = new();
@@ -51,6 +52,13 @@ public sealed class AlarmScheduler
     public TimeSpan[] Ladder { get; set; } = DefaultLadder;
     public double[] UsageThresholds { get; set; } = DefaultThresholds;
     public bool Enabled { get; set; } = true;
+    /// <summary>R3-P2-06 — per-bucket snooze map. Buckets with a future
+    /// snooze instant skip ALL rule families (R1/R2/R3/U1/U2).</summary>
+    public Dictionary<string, DateTimeOffset> SnoozedUntil { get; set; } = new();
+    /// <summary>R3-P1-03 — when true, fire a U2 pace toast when the
+    /// forecasted exhaustion is more than 1× lead-minutes inside the next
+    /// R1 tier window.</summary>
+    public bool PaceEnabled { get; set; } = true;
     public string? CustomWavPath { get; set; }
     public string? ResetWavPath { get; set; }
     public string? ZeroStateWavPath { get; set; }
@@ -98,6 +106,13 @@ public sealed class AlarmScheduler
         {
             if (string.IsNullOrEmpty(bucket.Id)) continue;
 
+            // R3-P2-06 — skip every rule family for snoozed buckets.
+            if (SnoozedUntil.TryGetValue(bucket.Id, out var snoozedUntil)
+                && snoozedUntil > now)
+            {
+                continue;
+            }
+
             _lastPercentByBucket.TryGetValue(bucket.Id, out var prevPercent);
             _lastResetByBucket.TryGetValue(bucket.Id, out var prevReset);
 
@@ -130,6 +145,21 @@ public sealed class AlarmScheduler
                     var key = $"{providerKey}-{bucket.Id}-U1-{threshold:0}-{Iso(bucket.ResetIso)}";
                     FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at {bucket.PercentUsed:0}%",
                         $"Threshold {threshold:0}% reached. Resets {HumanReset(bucket)}.", CustomWavPath);
+                }
+            }
+
+            // U2 — pace forecast. Fires once per resetISO when the
+            // PaceCalculator predicts the bucket will hit 100% before reset.
+            // The PaceCalculator returns a forecast string only when burn
+            // would exhaust the window; nothing else to threshold against.
+            if (PaceEnabled && bucket.PercentUsed < 80)
+            {
+                var paceLabel = _pace.Forecast(bucket.Id, bucket.PercentUsed, now, bucket.ResetIso);
+                if (!string.IsNullOrEmpty(paceLabel))
+                {
+                    var paceKey = $"{providerKey}-{bucket.Id}-U2-{Iso(bucket.ResetIso)}";
+                    FireOnce(paceKey, $"{Human(providerKey)} {Human(bucket)} pace warning",
+                        $"{paceLabel}. Currently {bucket.PercentUsed:0}% used.", CustomWavPath);
                 }
             }
 

@@ -15,6 +15,7 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
 {
     private readonly HealthCheck _check = new();
     private readonly DispatcherTimer _timer;
+    private readonly SettingsStore? _settings;
     private HealthSnapshot _last;
     private bool _isVisible;
 
@@ -47,16 +48,33 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
 
     public string TroubleshootingUrl => "https://github.com/SysAdminDoc/QuotaGlass#install";
 
-    public SetupCardViewModel(Dispatcher dispatcher)
+    public SetupCardViewModel(Dispatcher dispatcher, SettingsStore? settings = null)
     {
+        _settings = settings;
         _last = _check.Probe();
-        _isVisible = !_last.AllGood;
+        _isVisible = ShouldBeVisible(_last);
 
         _timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
         {
             Interval = TimeSpan.FromSeconds(2),
         };
         _timer.Tick += (_, _) => Refresh();
+    }
+
+    /// <summary>R3-P1-07 — dismiss the Setup card for 24 hours.</summary>
+    public void DismissForDay()
+    {
+        if (_settings is null) return;
+        _settings.Update(s => s.Widget.SetupCardDismissedUntilUtc = DateTimeOffset.UtcNow.AddDays(1));
+        IsVisible = false;
+    }
+
+    private bool ShouldBeVisible(HealthSnapshot snapshot)
+    {
+        if (snapshot.AllGood) return false;
+        var until = _settings?.Current.Widget.SetupCardDismissedUntilUtc;
+        if (until.HasValue && until.Value > DateTimeOffset.UtcNow) return false;
+        return true;
     }
 
     public void Start() => _timer.Start();
@@ -67,7 +85,7 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
         var next = _check.Probe();
         if (next == _last) return;
         _last = next;
-        IsVisible = !next.AllGood;
+        IsVisible = ShouldBeVisible(next);
         Raise(nameof(ExtensionStepLabel));
         Raise(nameof(NmhStepLabel));
         Raise(nameof(SnapshotStepLabel));
