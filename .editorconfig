@@ -1,0 +1,57 @@
+root = true
+
+# Default — every file gets LF line endings (matches .gitattributes),
+# 4-space indents, UTF-8, no trailing whitespace.
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Markdown leaves trailing spaces alone (they're line-break significant).
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML / JSON conventionally use 2-space indents.
+[*.{yml,yaml,json,jsonc}]
+indent_size = 2
+
+# Project / solution files keep CRLF + tabs since Visual Studio writes them
+# that way.
+[*.{csproj,sln,xaml,props,targets}]
+end_of_line = crlf
+
+# C# style — match conventions used across QuotaGlass.
+[*.cs]
+indent_size = 4
+
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Implicit using + nullable preferences (matches Directory.Build.props).
+csharp_using_directive_placement = outside_namespace:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_prefer_braces = when_multiline:silent
+
+# Naming — interfaces are PascalCase prefixed I; private fields _camelCase.
+dotnet_naming_rule.interfaces_must_be_prefixed_with_I.severity = suggestion
+dotnet_naming_rule.interfaces_must_be_prefixed_with_I.symbols = interfaces
+dotnet_naming_rule.interfaces_must_be_prefixed_with_I.style = i_prefix
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+
+dotnet_naming_style.i_prefix.required_prefix = I
+dotnet_naming_style.i_prefix.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_must_be_camel_case.severity = suggestion
+dotnet_naming_rule.private_fields_must_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_must_be_camel_case.style = underscore_camel_case
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case

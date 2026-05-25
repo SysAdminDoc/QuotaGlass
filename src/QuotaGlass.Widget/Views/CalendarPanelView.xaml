@@ -1,0 +1,44 @@
+<UserControl x:Class="QuotaGlass.Widget.Views.CalendarPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuotaGlass.Widget.ViewModels">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <!-- L-02 — 7-day next-resets calendar. Bind DataContext = CalendarViewModel. -->
+    <StackPanel>
+        <Button Style="{StaticResource HitButton}"
+                Content="{Binding ToggleLabel}"
+                Click="OnToggle"
+                HorizontalAlignment="Left"
+                Margin="0,8,0,0" />
+        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="6"
+                Margin="0,4,0,0"
+                Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+            <ItemsControl ItemsSource="{Binding Days}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CalendarDayViewModel}">
+                        <StackPanel Margin="0,0,0,6">
+                            <TextBlock Style="{StaticResource HeaderText}"
+                                       Text="{Binding Header}"
+                                       Margin="0,0,0,2" />
+                            <ItemsControl ItemsSource="{Binding Resets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:CalendarEntry}">
+                                        <TextBlock Style="{StaticResource SubText}"
+                                                   Text="{Binding Display}"
+                                                   Margin="6,0,0,2" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </StackPanel>
+</UserControl>

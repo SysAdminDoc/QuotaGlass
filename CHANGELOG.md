@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.7.0 just shipped.
+Nothing yet — v0.8.0 just shipped.
+
+## [0.8.0] — 2026-05-25
+
+UX refactor release. Settings panel reorganized into 4 expandable sub-sections (Alarms / Display / Integration / Advanced). Two of the largest inline XAML blocks (calendar + log) extracted into dedicated UserControls.
+
+### Refactored
+
+- **Settings panel sub-sections** — every existing control is unchanged structurally; just wrapped into four `Expander` headers so users with 14+ knobs don't see them all at once. Alarms is open by default (most-used); Display / Integration / Advanced collapse. ([Views/MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml))
+- **CalendarPanelView** extracted from MainWindow.xaml into its own [Views/CalendarPanelView.xaml](src/QuotaGlass.Widget/Views/CalendarPanelView.xaml) + .xaml.cs. DataContext is `MainViewModel.Calendar`; the toggle button delegates to `CalendarViewModel.Toggle()`.
+- **LogPanelView** extracted from MainWindow.xaml into [Views/LogPanelView.xaml](src/QuotaGlass.Widget/Views/LogPanelView.xaml). DataContext is `MainViewModel.LogPanel`.
+- MainWindow.xaml shrinks from 447 → ~390 lines as a result; the two extracted controls add 44 + 34 lines of self-contained XAML.
+
+### Added
+
+- **`.editorconfig`** — consistent line endings, indent width, and C# naming-style rules across contributors. Matches the conventions already in use (LF in source, CRLF in csproj/sln/xaml, 4-space C#, `_camelCase` private fields, `IPascal` interfaces).
+
+### Carried into v0.9+
+
+- `SnapshotWatcher.Merge` unit tests (needs the test project to reach into the Widget assembly — requires a TFM bump for the tests; defer until we have a real CI-validated build).
+- L-10 provider plugin contract.
+- N-20 manual screenshots.
+- RESX satellite assemblies (Strings.cs scaffold is ready, but actual locale files wait until v0.7 stabilizes in user hands).
 
 ## [0.7.0] — 2026-05-25
 

@@ -272,10 +272,6 @@ public partial class MainWindow : Window
 
     private void OnToggleSettings(object sender, RoutedEventArgs e) => _vm.Settings.Toggle();
 
-    private void OnToggleLog(object sender, RoutedEventArgs e) => _vm.LogPanel.Toggle();
-
-    private void OnToggleCalendar(object sender, RoutedEventArgs e) => _vm.Calendar.Toggle();
-
     private void OnResetSettings(object sender, RoutedEventArgs e)
     {
         var confirm = MessageBox.Show(

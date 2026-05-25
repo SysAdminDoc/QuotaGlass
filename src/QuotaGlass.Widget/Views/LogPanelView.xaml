@@ -1,0 +1,34 @@
+<UserControl x:Class="QuotaGlass.Widget.Views.LogPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <!-- NX-10 embedded log panel (collapsed by default). DataContext = LogPanelViewModel. -->
+    <StackPanel>
+        <Button Style="{StaticResource HitButton}"
+                Content="{Binding ToggleLabel}"
+                Click="OnToggle"
+                HorizontalAlignment="Left"
+                Margin="0,8,0,0" />
+        <Border BorderBrush="{StaticResource Brush.Card.Border}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="6"
+                Margin="0,4,0,0"
+                Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisibility}}">
+            <TextBox Text="{Binding Tail, Mode=OneWay}"
+                     IsReadOnly="True"
+                     FontFamily="{StaticResource Font.Mono}"
+                     FontSize="10"
+                     Foreground="{StaticResource Brush.Card.MutedText}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     MaxHeight="160" />
+        </Border>
+    </StackPanel>
+</UserControl>

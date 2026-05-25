@@ -57,11 +57,12 @@ Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
 - [x] **R4-N8** — High-contrast theme (`Theme/HighContrast.xaml` bound to `SystemColors.*Key`) + "Follow system" mode (reads `SystemParameters.HighContrast` + AppsUseLightTheme registry).
 - [x] **R4-N9** — `Strings.cs` localization scaffold; English keys + `SetUiCulture` API ready for future RESX satellite assemblies.
 
-### Carried into v0.8+
+### Carried into v0.9+
 
-- [ ] **P2 — Architecture refactor** — Extract `Views/SetupCard.xaml`, `SettingsPanel.xaml`, `CalendarPanel.xaml`, `LogPanel.xaml` as `UserControl`s.
-- [ ] **P2 — Settings panel sub-sections** — Group 14+ controls into expandable "Alarms" / "Display" / "Integration" / "Advanced".
+- [x] **P2 — Architecture refactor (partial)** — `CalendarPanelView.xaml` + `LogPanelView.xaml` extracted in v0.8. SetupCard + SettingsPanel still inline in MainWindow.xaml; defer (substantial XAML+event-handler rewire).
+- [x] **P2 — Settings panel sub-sections** — Alarms / Display / Integration / Advanced expanders shipped in v0.8.
 - [ ] **P3 — RESX satellite assemblies** — actually migrate XAML literals to `{x:Static res:Strings.AppTitle}` bindings once v0.7 stabilizes.
+- [ ] **P3 — SnapshotWatcher.Merge unit tests** — needs the test project to reach Widget assembly (cross-TFM).
 - [ ] **P3 — L-10** — Provider plugin contract (deferred until a real second-provider use case lands).
 - [ ] **P3 — N-20** — Manual screenshots for `assets/screenshots/`. Needs an actual runtime to capture.
 - [ ] **P3 — L-03 / UC-01 / UC-02** — Win11 Widgets board integration / Avalonia port / WinUI 3 port — under-consideration; no demand yet.
