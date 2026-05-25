@@ -1,0 +1,22 @@
+# Normalize line endings — Windows-only repo, but contributors may
+# clone on Linux/macOS for code review. LF in the index keeps git
+# diffs sane; checkout applies the local platform's convention.
+* text=auto eol=lf
+
+# Force CRLF on shell-out artifacts that Windows tooling expects.
+*.bat        text eol=crlf
+*.cmd        text eol=crlf
+*.ps1        text eol=crlf
+*.iss        text eol=crlf
+
+# Treat as binary so git doesn't try to diff or merge.
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.ico        binary
+*.wav        binary
+*.mp3        binary
+*.m4a        binary
+*.pdb        binary
+*.exe        binary
+*.dll        binary

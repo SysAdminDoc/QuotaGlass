@@ -153,8 +153,8 @@ Pass 3 additions ✅ — all shipped in v0.2.0 (2026-05-25).
 - [x] **P2 — NX-09** — Multiline ring hover tooltip.
 - [x] **P2 — NX-10** — Embedded log panel inside the settings panel.
 
-- [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates. **(Large feature; warrants its own session.)**
-- [ ] **R2-P1-05** — Hermes credential source (folds into F-N1).
+- [x] **F-N1** — Direct credential reading via `QuotaGlass.NMH.exe --poll-credentials`. Reads `.claude/.credentials.json`, `.codex/auth.json`, `.hermes/auth.json`, parses headers + WHAM JSON, writes synthesized snapshot. ([NMH/CredentialPoller.cs](src/QuotaGlass.NMH/CredentialPoller.cs))
+- [x] **R2-P1-05** — Hermes credential source — included in F-N1 (`%USERPROFILE%\.hermes\auth.json`).
 - [x] **F-N5** — `Services/MicaBackdrop.cs` applies Mica system backdrop on Win11 22621+ via `DwmSetWindowAttribute(DWMWA_SYSTEMBACKDROP_TYPE)` + dark immersive title bar. No-op on Win10.
 - [ ] **NX-04** — Edge-snap on drag (within 16 px of monitor edge).
 - [x] **NX-05** — `MainWindow.OnSourceInitialized` restores `Widget.X`/`Widget.Y` from settings if still on-screen; `LocationChanged` persists. Multi-monitor aware via `Screen.AllScreens`.
@@ -169,15 +169,15 @@ Pass 3 additions ✅ — all shipped in v0.2.0 (2026-05-25).
 
 ## Phase 3 — v0.3+
 
-- [ ] **L-01** — Per-tier alarm sound + message.
+- [x] **L-01** — Per-tier alarm sound (UI exposure for Reset / Zero-state slots).
 - [ ] **L-02** — 7-day "next resets" calendar view.
 - [ ] **L-04** — Action Center deep-links on toast buttons.
 - [ ] **L-06** — Named pipe between NMH and Widget (drops 250ms FileSystemWatcher latency to <10ms).
 - [ ] **L-07** — Plan auto-detection from reset cadence.
-- [ ] **L-08** — Burn-rate pace marker on ring (lighter tick).
+- [x] **L-08** — Burn-rate pace marker on ring (lighter tick at projected exhaustion angle).
 - [ ] **L-09** — Anomaly / spike detection.
 - [ ] **L-10** — Provider plugin contract.
-- [ ] **F-N7** — Shell-command webhook on alarm fire.
+- [x] **F-N7** — Shell-command webhook on alarm fire (5 QG_* env vars + 5 s timeout).
 - [ ] **L-12** — Native messaging companion to keep extension SW alive (mostly handled by F-A4 already).
 
 ---

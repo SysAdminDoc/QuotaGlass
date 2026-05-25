@@ -115,6 +115,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _alarms.CustomWavPath = s.CustomWavPath;
         _alarms.ResetWavPath = s.ResetWavPath;
         _alarms.ZeroStateWavPath = s.ZeroStateWavPath;
+        _alarms.WebhookCommand = s.WebhookCommand;
+        _alarms.RespectFocusAssist = s.RespectFocusAssist;
+        _alarms.PaceEnabled = s.PaceEnabled;
         _alarms.SnoozedUntil = new Dictionary<string, DateTimeOffset>(s.SnoozedBucketsUntilUtc);
     }
 

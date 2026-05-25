@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Windows.Threading;
 using QuotaGlass.Shared;
@@ -59,9 +60,17 @@ public sealed class AlarmScheduler
     /// forecasted exhaustion is more than 1× lead-minutes inside the next
     /// R1 tier window.</summary>
     public bool PaceEnabled { get; set; } = true;
+    /// <summary>R3-P2-04 — when true, suppress non-priority toasts during
+    /// Windows Focus Assist / DND / fullscreen game / presentation mode.
+    /// Suppressed keys are still marked fired so they don't fire later.</summary>
+    public bool RespectFocusAssist { get; set; } = true;
     public string? CustomWavPath { get; set; }
     public string? ResetWavPath { get; set; }
     public string? ZeroStateWavPath { get; set; }
+
+    /// <summary>F-N7 — optional shell command launched on each fire with
+    /// QG_* env vars. Empty disables.</summary>
+    public string? WebhookCommand { get; set; }
 
     public AlarmScheduler(Dispatcher dispatcher, ToastService toast, FiredRulesStore fired)
     {
@@ -126,7 +135,7 @@ public sealed class AlarmScheduler
             {
                 var key = $"{providerKey}-{bucket.Id}-R2-{Iso(bucket.ResetIso)}";
                 FireOnce(key, $"{Human(providerKey)} {Human(bucket)} renewed",
-                    "Fresh quota available.", ResetWavPath);
+                    "Fresh quota available.", ResetWavPath, providerKey, bucket, "R2");
             }
 
             // R3 — zero-state. Bucket reached or crossed 100%.
@@ -134,7 +143,8 @@ public sealed class AlarmScheduler
             {
                 var key = $"{providerKey}-{bucket.Id}-R3-{Iso(bucket.ResetIso)}";
                 FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at 100%",
-                    $"Window exhausted. Resets {HumanReset(bucket)}.", ZeroStateWavPath);
+                    $"Window exhausted. Resets {HumanReset(bucket)}.", ZeroStateWavPath,
+                    providerKey, bucket, "R3");
             }
 
             // U1 — threshold warnings (75 / 90 / 95).
@@ -144,7 +154,8 @@ public sealed class AlarmScheduler
                 {
                     var key = $"{providerKey}-{bucket.Id}-U1-{threshold:0}-{Iso(bucket.ResetIso)}";
                     FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at {bucket.PercentUsed:0}%",
-                        $"Threshold {threshold:0}% reached. Resets {HumanReset(bucket)}.", CustomWavPath);
+                        $"Threshold {threshold:0}% reached. Resets {HumanReset(bucket)}.", CustomWavPath,
+                        providerKey, bucket, $"U1-{threshold:0}");
                 }
             }
 
@@ -159,52 +170,36 @@ public sealed class AlarmScheduler
                 {
                     var paceKey = $"{providerKey}-{bucket.Id}-U2-{Iso(bucket.ResetIso)}";
                     FireOnce(paceKey, $"{Human(providerKey)} {Human(bucket)} pace warning",
-                        $"{paceLabel}. Currently {bucket.PercentUsed:0}% used.", CustomWavPath);
+                        $"{paceLabel}. Currently {bucket.PercentUsed:0}% used.", CustomWavPath,
+                        providerKey, bucket, "U2");
                 }
             }
 
-            // R1 — imminent-reset ladder. Walk SMALLEST-lead first so a cold
-            // start with multiple tiers already past doesn't fire the largest
-            // (stalest) tier first; instead, fire the closest-to-now tier and
-            // mark every earlier missed tier as fired-but-suppressed so we
-            // don't backfire stale toasts at 15s intervals.
+            // R1 — imminent-reset ladder. Decision logic extracted into
+            // QuotaGlass.Shared.LadderEvaluator so it can be unit-tested
+            // without WPF deps.
             if (bucket.ResetIso.HasValue && bucket.ResetIso.Value > DateTimeOffset.MinValue)
             {
                 var resetAt = bucket.ResetIso.Value;
-                if (now <= resetAt + TimeSpan.FromMinutes(2))
+                string KeyFor(TimeSpan lead) =>
+                    $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
+
+                var decision = LadderEvaluator.Evaluate(
+                    Ladder, resetAt, now, lead => _fired.HasFired(KeyFor(lead)));
+
+                if (decision.FireLead.HasValue)
                 {
-                    var sortedLeads = Ladder.OrderBy(t => t).ToArray();
-                    TimeSpan? fireLead = null;
-                    foreach (var lead in sortedLeads)
-                    {
-                        var fireAt = resetAt - lead;
-                        if (now < fireAt) break; // remaining tiers haven't elapsed
-                        var key = $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
-                        if (_fired.HasFired(key)) continue;
-                        fireLead = lead;
-                        break;
-                    }
+                    var lead = decision.FireLead.Value;
+                    var key = KeyFor(lead);
+                    var title = lead == TimeSpan.Zero
+                        ? $"{Human(providerKey)} {Human(bucket)} resetting now"
+                        : $"{Human(providerKey)} {Human(bucket)} resets in {HumanLead(lead)}";
+                    var body = $"Currently {bucket.PercentUsed:0}% used.";
+                    FireOnce(key, title, body, CustomWavPath, providerKey, bucket, $"R1-{FormatLead(lead)}");
 
-                    if (fireLead.HasValue)
+                    foreach (var staleLead in decision.SuppressLeads)
                     {
-                        var lead = fireLead.Value;
-                        var key = $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
-                        var title = lead == TimeSpan.Zero
-                            ? $"{Human(providerKey)} {Human(bucket)} resetting now"
-                            : $"{Human(providerKey)} {Human(bucket)} resets in {HumanLead(lead)}";
-                        var body = $"Currently {bucket.PercentUsed:0}% used.";
-                        FireOnce(key, title, body, CustomWavPath);
-
-                        // Suppress every LARGER-lead (earlier) tier we already
-                        // missed — marking them fired prevents the cascade.
-                        foreach (var staleLead in sortedLeads)
-                        {
-                            if (staleLead <= lead) continue;
-                            var staleFireAt = resetAt - staleLead;
-                            if (now < staleFireAt) break;
-                            var staleKey = $"{providerKey}-{bucket.Id}-R1-{FormatLead(staleLead)}-{Iso(bucket.ResetIso)}";
-                            if (!_fired.HasFired(staleKey)) _fired.MarkFired(staleKey);
-                        }
+                        _fired.MarkFired(KeyFor(staleLead));
                     }
                 }
             }
@@ -214,11 +209,74 @@ public sealed class AlarmScheduler
         }
     }
 
-    private void FireOnce(string key, string title, string body, string? wav)
+    private void FireOnce(string key, string title, string body, string? wav,
+        string providerKey = "", Bucket? bucket = null, string tier = "")
     {
         if (_fired.HasFired(key)) return;
+
+        // R3-P2-04 — DND-equivalent states swallow the toast but we still
+        // mark the key fired so we don't backfire after the user leaves
+        // Focus Assist. Matches the R1 ladder cold-start fix semantics.
+        if (RespectFocusAssist && FocusAssist.ShouldSuppressToasts())
+        {
+            _fired.MarkFired(key);
+            return;
+        }
+
         _toast.Show(title, body, wav, tag: key);
         _fired.MarkFired(key);
+
+        // F-N7 — fire-and-forget webhook with QG_* env vars. Process is
+        // launched via cmd /c so users can write `curl -X POST ntfy/…` or
+        // similar without writing batch files. 5-second self-kill prevents
+        // a runaway command from leaking processes.
+        TryRunWebhook(providerKey, bucket, tier);
+    }
+
+    private void TryRunWebhook(string providerKey, Bucket? bucket, string tier)
+    {
+        if (string.IsNullOrWhiteSpace(WebhookCommand) || bucket is null) return;
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c " + WebhookCommand,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+            };
+            // Env vars are the safe injection surface — never substitute into
+            // the command string. Power-user pattern: cmd "/c curl -d $env:QG_PERCENT ..."
+            psi.Environment["QG_PROVIDER"] = providerKey;
+            psi.Environment["QG_BUCKET_ID"] = bucket.Id ?? string.Empty;
+            psi.Environment["QG_PERCENT"] = bucket.PercentUsed.ToString("0.##");
+            psi.Environment["QG_RESET_ISO"] = bucket.ResetIso?.ToString("O") ?? string.Empty;
+            psi.Environment["QG_TIER"] = tier;
+
+            var proc = Process.Start(psi);
+            if (proc is null) return;
+            // Fire-and-forget; reap after 5 s so we never leak processes.
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    if (!proc.WaitForExit(5000))
+                    {
+                        try { proc.Kill(entireProcessTree: true); } catch { }
+                    }
+                }
+                finally
+                {
+                    proc.Dispose();
+                }
+            });
+        }
+        catch
+        {
+            // Webhook failure must never break the alarm UX.
+        }
     }
 
     private static string Iso(DateTimeOffset? dt) => dt?.ToUniversalTime().ToString("O") ?? "no-reset";

@@ -195,9 +195,32 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnCardRightClicked(object sender, MouseButtonEventArgs e)
+    /// <summary>UX-Acc-02 — keyboard activation. Enter / Space opens the
+    /// analytics page; Shift+F10 / Apps opens the snooze context menu.</summary>
+    private void OnCardKeyDown(object sender, KeyEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: BucketViewModel vm }) return;
+
+        switch (e.Key)
+        {
+            case Key.Enter:
+            case Key.Space:
+                if (!string.IsNullOrEmpty(vm.AnalyticsUrl)) OpenUrlSafe(vm.AnalyticsUrl);
+                e.Handled = true;
+                break;
+            case Key.Apps:
+                ShowSnoozeMenu((UIElement)sender, vm);
+                e.Handled = true;
+                break;
+            case Key.F10 when (Keyboard.Modifiers & ModifierKeys.Shift) != 0:
+                ShowSnoozeMenu((UIElement)sender, vm);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void ShowSnoozeMenu(UIElement target, BucketViewModel vm)
+    {
         var bucketId = vm.Id;
         if (string.IsNullOrEmpty(bucketId)) return;
 
@@ -208,12 +231,10 @@ public partial class MainWindow : Window
             item.Click += (_, _) => _vm.SnoozeBucket(bucketId, duration);
             menu.Items.Add(item);
         }
-
         Add("Snooze 1 hour", TimeSpan.FromHours(1));
         Add("Snooze 6 hours", TimeSpan.FromHours(6));
         Add("Snooze 24 hours", TimeSpan.FromHours(24));
         Add("Snooze until reset", TimeSpan.FromDays(8));
-
         if (_vm.SettingsStore.Current.Alarms.SnoozedBucketsUntilUtc.ContainsKey(bucketId))
         {
             menu.Items.Add(new Separator());
@@ -221,9 +242,16 @@ public partial class MainWindow : Window
             unsnooze.Click += (_, _) => _vm.UnsnoozeBucket(bucketId);
             menu.Items.Add(unsnooze);
         }
-
-        menu.PlacementTarget = sender as UIElement;
+        menu.PlacementTarget = target;
         menu.IsOpen = true;
+    }
+
+    private void OnCardRightClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: BucketViewModel vm } el)
+        {
+            ShowSnoozeMenu(el, vm);
+        }
     }
 
     private void OnOpenUrlFromTag(object sender, RoutedEventArgs e)
@@ -238,7 +266,11 @@ public partial class MainWindow : Window
 
     private void OnToggleLog(object sender, RoutedEventArgs e) => _vm.LogPanel.Toggle();
 
-    private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile();
+    private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.Custom);
+
+    private void OnPickResetWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.Reset);
+
+    private void OnPickZeroStateWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.ZeroState);
 
     private void OnDismissSetup(object sender, RoutedEventArgs e) => _vm.Setup.DismissForDay();
 

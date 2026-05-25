@@ -117,6 +117,34 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         _paceLabel = label;
         Raise(nameof(PaceLabel));
         Raise(nameof(HasPace));
+        Raise(nameof(PaceMarkerPercent));
+    }
+
+    /// <summary>
+    /// L-08 — projected percent-at-reset based on the two most recent
+    /// history samples. NaN when we can't or shouldn't draw a tick.
+    /// </summary>
+    public double PaceMarkerPercent
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_paceLabel)) return double.NaN;
+            if (_sparkline is null || _sparkline.Count < 2) return double.NaN;
+            if (_model.ResetIso is null) return double.NaN;
+
+            var prev = _sparkline[^2];
+            var last = _sparkline[^1];
+            var dtMinutes = (last.Ts - prev.Ts).TotalMinutes;
+            if (dtMinutes <= 0) return double.NaN;
+            var slope = (last.PercentUsed - prev.PercentUsed) / dtMinutes;
+            if (slope <= 0) return double.NaN;
+
+            var remainingMinutes = (_model.ResetIso.Value - last.Ts).TotalMinutes;
+            if (remainingMinutes <= 0) return double.NaN;
+
+            var projected = last.PercentUsed + slope * remainingMinutes;
+            return Math.Clamp(projected, _model.PercentUsed, 100);
+        }
     }
 
     /// <summary>R3-P2-02 / NX-08 — durable history samples for the sparkline.</summary>

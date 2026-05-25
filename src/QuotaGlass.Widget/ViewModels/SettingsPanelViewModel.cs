@@ -44,6 +44,24 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         set { _store.Update(s => s.Alarms.Enabled = value); Raise(); }
     }
 
+    public bool PaceEnabled
+    {
+        get => _store.Current.Alarms.PaceEnabled;
+        set { _store.Update(s => s.Alarms.PaceEnabled = value); Raise(); }
+    }
+
+    public bool RespectFocusAssist
+    {
+        get => _store.Current.Alarms.RespectFocusAssist;
+        set { _store.Update(s => s.Alarms.RespectFocusAssist = value); Raise(); }
+    }
+
+    public string WebhookCommand
+    {
+        get => _store.Current.Alarms.WebhookCommand ?? string.Empty;
+        set { _store.Update(s => s.Alarms.WebhookCommand = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
+    }
+
     /// <summary>NX-06 — `mocha` (dark) or `latte` (light).</summary>
     public string Theme
     {
@@ -117,6 +135,18 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         set { _store.Update(s => s.Alarms.CustomWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
     }
 
+    public string ResetWavPath
+    {
+        get => _store.Current.Alarms.ResetWavPath ?? "";
+        set { _store.Update(s => s.Alarms.ResetWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
+    }
+
+    public string ZeroStateWavPath
+    {
+        get => _store.Current.Alarms.ZeroStateWavPath ?? "";
+        set { _store.Update(s => s.Alarms.ZeroStateWavPath = string.IsNullOrWhiteSpace(value) ? null : value); Raise(); }
+    }
+
     public SettingsPanelViewModel(SettingsStore store)
     {
         _store = store;
@@ -162,16 +192,23 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
 
     public void Toggle() => IsExpanded = !IsExpanded;
 
-    public string? PickWavFile()
+    public enum WavSlot { Custom, Reset, ZeroState }
+
+    public string? PickWavFile(WavSlot slot = WavSlot.Custom)
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Pick a custom alarm sound",
+            Title = $"Pick alarm sound ({slot})",
             Filter = "Audio (*.wav)|*.wav|All files (*.*)|*.*",
             CheckFileExists = true,
         };
         if (dlg.ShowDialog() != true) return null;
-        CustomWavPath = dlg.FileName;
+        switch (slot)
+        {
+            case WavSlot.Reset: ResetWavPath = dlg.FileName; break;
+            case WavSlot.ZeroState: ZeroStateWavPath = dlg.FileName; break;
+            default: CustomWavPath = dlg.FileName; break;
+        }
         return dlg.FileName;
     }
 

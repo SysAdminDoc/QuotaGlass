@@ -16,6 +16,8 @@ if (args.Length > 0)
             return Purge();
         case "--collect-diagnostics":
             return Diagnostics.Collect();
+        case "--poll-credentials":
+            return await RunCredentialPollerAsync(args);
         case "--version":
             Console.Error.WriteLine($"QuotaGlass.NMH {typeof(Program).Assembly.GetName().Version}");
             return 0;
@@ -39,6 +41,27 @@ catch (Exception ex)
 {
     Logger.Error("Fatal in MessagePump", ex);
     return 2;
+}
+
+static async Task<int> RunCredentialPollerAsync(string[] args)
+{
+    // F-N1 — long-running poll loop. Default 30 min interval; user can
+    // override with --interval-minutes N (clamped to [5, 1440]).
+    var minutes = 30;
+    for (var i = 1; i < args.Length - 1; i++)
+    {
+        if (string.Equals(args[i], "--interval-minutes", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(args[i + 1], out var parsed))
+        {
+            minutes = Math.Clamp(parsed, 5, 1440);
+            break;
+        }
+    }
+
+    using var cts = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+    var poller = new CredentialPoller(TimeSpan.FromMinutes(minutes));
+    return await poller.RunAsync(cts.Token);
 }
 
 static int Purge()
@@ -84,6 +107,7 @@ static void PrintHelp()
           QuotaGlass.NMH.exe --unregister   # remove registry keys + manifest
           QuotaGlass.NMH.exe --purge        # wipe %LOCALAPPDATA%\QuotaGlass\ (does not unregister)
           QuotaGlass.NMH.exe --collect-diagnostics  # zip logs + redacted snapshot/settings into %TEMP%\quotaglass-diag-*.zip
+          QuotaGlass.NMH.exe --poll-credentials [--interval-minutes N]  # F-N1: long-running OAuth token poller for Claude Code / Codex / Hermes
           QuotaGlass.NMH.exe --version      # print version and exit
         """);
 }

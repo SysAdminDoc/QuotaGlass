@@ -115,6 +115,23 @@ public sealed class RadialRing : FrameworkElement
         set => SetValue(ReducedMotionProperty, value);
     }
 
+    /// <summary>
+    /// L-08 — projected exhaustion percent (0..100). When &gt; current
+    /// Percent, a lighter tick is drawn at this angle to hint at the
+    /// burn-rate forecast. <c>NaN</c> = no marker drawn.
+    /// </summary>
+    public static readonly DependencyProperty PaceMarkerPercentProperty = DependencyProperty.Register(
+        nameof(PaceMarkerPercent),
+        typeof(double),
+        typeof(RadialRing),
+        new FrameworkPropertyMetadata(double.NaN, FrameworkPropertyMetadataOptions.AffectsRender, OnVisualPropertyChanged));
+
+    public double PaceMarkerPercent
+    {
+        get => (double)GetValue(PaceMarkerPercentProperty);
+        set => SetValue(PaceMarkerPercentProperty, value);
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         var side = Math.Min(ActualWidth, ActualHeight);
@@ -160,6 +177,24 @@ public sealed class RadialRing : FrameworkElement
         geometry.Freeze();
 
         dc.DrawGeometry(null, sweepPen, geometry);
+
+        // L-08 — lighter tick at the forecasted exhaustion angle.
+        var pace = PaceMarkerPercent;
+        if (!double.IsNaN(pace) && pace > clamped && pace <= 100)
+        {
+            var tickColor = sweepBrush is SolidColorBrush scb
+                ? Color.FromArgb(160, scb.Color.R, scb.Color.G, scb.Color.B)
+                : Color.FromArgb(160, 230, 230, 230);
+            using var tickPen = new Pen(new SolidColorBrush(tickColor), Math.Max(1, stroke / 2))
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round,
+            };
+            var angle = -90 + (pace / 100.0 * 360.0);
+            var inner = PointOnCircle(center, radius - stroke / 2, angle);
+            var outer = PointOnCircle(center, radius + stroke / 2, angle);
+            dc.DrawLine(tickPen, inner, outer);
+        }
     }
 
     private static Point PointOnCircle(Point center, double radius, double degrees)

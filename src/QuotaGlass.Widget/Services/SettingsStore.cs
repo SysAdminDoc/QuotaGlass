@@ -107,6 +107,23 @@ public sealed class AlarmSettings
     /// <summary>WAV played on zero-state (R3, 100% used).</summary>
     [JsonPropertyName("zeroStateWavPath")]
     public string? ZeroStateWavPath { get; set; }
+
+    /// <summary>F-N7 — optional shell command launched on every alarm fire.
+    /// Five env vars are passed: <c>QG_PROVIDER</c>, <c>QG_BUCKET_ID</c>,
+    /// <c>QG_PERCENT</c>, <c>QG_RESET_ISO</c>, <c>QG_TIER</c>. Empty disables.
+    /// </summary>
+    [JsonPropertyName("webhookCommand")]
+    public string? WebhookCommand { get; set; }
+
+    /// <summary>R3-P2-04 — when true, respect Windows Focus Assist / DND
+    /// state and suppress non-priority toasts.</summary>
+    [JsonPropertyName("respectFocusAssist")]
+    public bool RespectFocusAssist { get; set; } = true;
+
+    /// <summary>R3-P1-03 — when true, surface the burn-rate pace forecast
+    /// as a U2 toast tier (in addition to the silent footer label).</summary>
+    [JsonPropertyName("paceEnabled")]
+    public bool PaceEnabled { get; set; } = true;
 }
 
 public sealed class WidgetSettings

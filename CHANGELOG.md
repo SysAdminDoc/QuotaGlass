@@ -7,7 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.2.0 just shipped. See [ROADMAP.md](ROADMAP.md) for the v0.3+ queue (multi-account columns, Focus Assist awareness, schema v2 history bundle).
+Nothing yet — v0.3.0 just shipped.
+
+## [0.3.0] — 2026-05-25
+
+Power-user release: closes the bulk of the Pass 3 v0.3 queue plus the
+biggest Phase-3 items (F-N1 credential reading, F-N7 webhooks, L-01
+per-tier sounds, L-08 pace marker). Adds an accessibility batch plus
+the first SECURITY.md / CONTRIBUTING.md / .gitattributes.
+
+### Added — biggest
+
+- **F-N1** — Direct OAuth credential reading. `QuotaGlass.NMH.exe --poll-credentials [--interval-minutes N]` is a long-running mode that:
+  - probes `%USERPROFILE%\.claude\.credentials.json`, `%USERPROFILE%\.codex\auth.json`, and `%USERPROFILE%\.hermes\auth.json`;
+  - calls the matching provider with the access token (minimal `/v1/messages` ping for Claude; WHAM usage GET for Codex);
+  - parses `anthropic-ratelimit-unified-{5h,7d}-*` headers and ChatGPT WHAM `primary_window` / `secondary_window` JSON;
+  - writes the resulting `SnapshotMessage` through the same `AtomicJsonFile` sink the extension bridge uses (source: `local-creds`).
+  - Closes the "browser must be open" gap. Six credential schema shapes handled. ([NMH/CredentialPoller.cs](src/QuotaGlass.NMH/CredentialPoller.cs))
+- **F-N7** — Shell-command webhook on alarm fire. Settings panel exposes a `cmd /c …` command run with five env vars (`QG_PROVIDER`, `QG_BUCKET_ID`, `QG_PERCENT`, `QG_RESET_ISO`, `QG_TIER`). 5 s self-kill. Power users wire ntfy / Discord / Home Assistant without QuotaGlass shipping the integrations. ([AlarmScheduler.cs](src/QuotaGlass.Widget/Services/AlarmScheduler.cs))
+- **R3-P2-04** — Focus Assist / DND awareness via `SHQueryUserNotificationState`. Suppressed tiers are still marked fired so they don't replay later (matches the R1 cold-start semantics). Toggleable in settings. ([Services/FocusAssist.cs](src/QuotaGlass.Widget/Services/FocusAssist.cs))
+- **L-08** — Burn-rate pace marker on the ring. A lighter tick at the projected exhaustion angle when `PaceCalculator` says burn will exhaust before reset. Driven by the new `BucketViewModel.PaceMarkerPercent`. ([Controls/RadialRing.cs](src/QuotaGlass.Widget/Controls/RadialRing.cs))
+
+### Added — UI / config
+
+- **L-01** — Per-tier alarm sound UI. The `Reset (R2) sound` and `Zero-state (R3) sound` slots that existed in `Settings.Alarms` since v0.1.0 are now pickable from the settings panel. The `Custom (R1/U1/U2) sound` row remains as before.
+- **Pace toast toggle** — Settings exposes `Alarms.PaceEnabled` (default ON) so users can turn off the new U2 pace-warning tier without touching JSON.
+- **UX-Acc batch** — Bucket cards are now keyboard-focusable (`Focusable=True`, `IsTabStop=True`); Enter/Space opens the analytics URL; Shift+F10 / Apps opens the snooze context menu. AutomationProperties for the card include the full hover tooltip so screen readers narrate provider + label + percent + reset time.
+
+### Added — refactor + tests
+
+- **LadderEvaluator** — Pure decision logic for the R1 ladder extracted into `src/QuotaGlass.Shared/LadderEvaluator.cs` so it's unit-testable without WPF deps. AlarmScheduler now delegates to it; behavior is identical. ([Shared/LadderEvaluator.cs](src/QuotaGlass.Shared/LadderEvaluator.cs))
+- **6 new tests in `LadderEvaluatorTests`** — locks in R3-P0-01: cold-start fires smallest tier, walking tick-by-tick fires each tier once, past-grace returns no decision, already-fired-5m falls through to at-reset after the window, before-any-tier-elapses returns null, custom grace works. ([test/QuotaGlass.Tests/LadderEvaluatorTests.cs](test/QuotaGlass.Tests/LadderEvaluatorTests.cs))
+- **10 new tests in `CredentialPollerTests`** — pure-functional pieces of F-N1: access-token extraction across 8 schema shapes; ratio → percent normalization; epoch (seconds/ms) and ISO date parsing; Claude unified-5h/7d header → ProviderSnapshot; Codex WHAM `primary_window`/`secondary_window` JSON. Test csproj now references QuotaGlass.NMH too. ([test/QuotaGlass.Tests/CredentialPollerTests.cs](test/QuotaGlass.Tests/CredentialPollerTests.cs))
+
+### Added — repo hygiene
+
+- **[.gitattributes](.gitattributes)** — normalize line endings (LF in index, platform-native on checkout); CRLF forced on `.bat` / `.cmd` / `.ps1` / `.iss`; binary markers for media + executables.
+- **[SECURITY.md](SECURITY.md)** — coordinated-disclosure policy via GitHub Security Advisories; explicit list of acceptable PoC paths; commit-to lines.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — match-existing-style guide; no Co-Authored-By trailer; no surprise NuGet packages; layout + style + PR cheat-sheet.
+
+### Known limitations carried forward
+
+- F-N1 credential probe still needs live validation against a 2026-Q2 Claude Code / Codex CLI install on a desktop with the SDK. Schema may drift; the parser is tolerant but not omniscient.
+- MP3 / M4A toast audio via NAudio — deferred to v0.4.
+- R3-P2-01 multi-account columns within a provider — needs F-N1 to land on real data first; deferred to v0.4.
+- Manual screenshots for `assets/screenshots/` — still open.
+- Toast actions (Snooze / Open) — Toolkit-or-COM-activator decision deferred to v0.4.
 
 ## [0.2.0] — 2026-05-25
 

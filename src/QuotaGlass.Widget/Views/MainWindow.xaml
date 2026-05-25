@@ -126,10 +126,13 @@
                     <DataTemplate DataType="{x:Type vm:BucketViewModel}">
                         <Border Style="{StaticResource CardBorder}"
                                 Cursor="Hand"
+                                Focusable="True"
+                                IsTabStop="True"
                                 MouseLeftButtonUp="OnCardClicked"
                                 MouseRightButtonUp="OnCardRightClicked"
+                                KeyDown="OnCardKeyDown"
                                 AutomationProperties.Name="{Binding HoverTooltip}"
-                                AutomationProperties.HelpText="Click to open the provider's analytics page. Right-click for mute / snooze.">
+                                AutomationProperties.HelpText="Click or press Enter to open the provider's analytics page. Right-click or press Shift+F10 to snooze.">
                             <Border.ToolTip>
                                 <ToolTip>
                                     <StackPanel>
@@ -154,6 +157,7 @@
                                 <Grid Grid.Column="0" Width="80" Height="80" Margin="0,0,12,0" Opacity="{Binding StaleOpacity}">
                                     <c:RadialRing Percent="{Binding Percent}"
                                                   Thickness="9"
+                                                  PaceMarkerPercent="{Binding PaceMarkerPercent}"
                                                   ReducedMotion="{Binding DataContext.ReducedMotion, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                   TrackBrush="{StaticResource Brush.Ring.Track}"
                                                   SafeBrush="{StaticResource Brush.Ring.Safe}"
@@ -209,6 +213,16 @@
                                   Foreground="{StaticResource Brush.Card.BodyText}"
                                   Margin="0,0,0,6"
                                   IsChecked="{Binding Settings.Autostart}" />
+                        <CheckBox Content="Fire pace (burn-rate) warning toasts"
+                                  Foreground="{StaticResource Brush.Card.BodyText}"
+                                  Margin="0,0,0,6"
+                                  ToolTip="Triggers a single U2 toast per reset window when the forecast says the bucket will exhaust before reset."
+                                  IsChecked="{Binding Settings.PaceEnabled}" />
+                        <CheckBox Content="Respect Windows Focus Assist / DND"
+                                  Foreground="{StaticResource Brush.Card.BodyText}"
+                                  Margin="0,0,0,6"
+                                  ToolTip="Suppresses alarm toasts while Focus Assist, fullscreen apps, or presentation mode are active. Suppressed tiers are marked fired so they don't replay later."
+                                  IsChecked="{Binding Settings.RespectFocusAssist}" />
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Style="{StaticResource SubText}"
                                        VerticalAlignment="Center"
@@ -256,11 +270,54 @@
                                        Style="{StaticResource MutedText}"
                                        VerticalAlignment="Center"
                                        Margin="6,0,6,0"
+                                       TextTrimming="CharacterEllipsis"
                                        Text="{Binding Settings.CustomWavPath}" />
                             <Button Grid.Column="2"
                                     Style="{StaticResource HitButton}"
                                     Content="Pick…"
                                     Click="OnPickWavClicked" />
+                        </Grid>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Style="{StaticResource SubText}"
+                                       VerticalAlignment="Center"
+                                       Text="Reset (R2) sound:" />
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource MutedText}"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,6,0"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding Settings.ResetWavPath}" />
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource HitButton}"
+                                    Content="Pick…"
+                                    Click="OnPickResetWavClicked" />
+                        </Grid>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Style="{StaticResource SubText}"
+                                       VerticalAlignment="Center"
+                                       Text="Zero-state (R3) sound:" />
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource MutedText}"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,6,0"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding Settings.ZeroStateWavPath}" />
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource HitButton}"
+                                    Content="Pick…"
+                                    Click="OnPickZeroStateWavClicked" />
                         </Grid>
                         <Grid Margin="0,6,0,0">
                             <Grid.ColumnDefinitions>
@@ -286,6 +343,17 @@
                                          ToolTip="Ring turns red above this percentage." />
                             </StackPanel>
                         </Grid>
+                        <!-- F-N7 — shell-command webhook -->
+                        <TextBlock Style="{StaticResource SubText}"
+                                   Text="Webhook command on alarm fire (optional):"
+                                   ToolTip="Runs with cmd /c on each alarm fire. Env vars: QG_PROVIDER, QG_BUCKET_ID, QG_PERCENT, QG_RESET_ISO, QG_TIER. 5 s timeout."
+                                   Margin="0,8,0,2" />
+                        <TextBox Text="{Binding Settings.WebhookCommand, UpdateSourceTrigger=LostFocus}"
+                                 Background="{StaticResource Brush.Window.Background}"
+                                 Foreground="{StaticResource Brush.Card.BodyText}"
+                                 BorderBrush="{StaticResource Brush.Card.Border}"
+                                 ToolTip="e.g. curl -d \"%QG_PROVIDER% at %QG_PERCENT%%%\" https://ntfy.sh/your-topic" />
+
                         <!-- NX-10 embedded log panel (collapsed by default) -->
                         <Button Style="{StaticResource HitButton}"
                                 Content="{Binding LogPanel.ToggleLabel}"
