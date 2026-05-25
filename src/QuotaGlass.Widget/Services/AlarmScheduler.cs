@@ -41,10 +41,12 @@ public sealed class AlarmScheduler
 
     public static readonly double[] DefaultThresholds = { 75, 90, 95 };
 
-    private readonly ToastService _toast;
+    private readonly IToastService _toast;
     private readonly FiredRulesStore _fired;
     private readonly DispatcherTimer _tick;
     private readonly PaceCalculator _pace = new();
+    private readonly Func<DateTimeOffset> _utcNow;
+    private readonly Func<bool> _shouldSuppressToasts;
 
     private SnapshotMessage? _latest;
     private readonly Dictionary<string, double> _lastPercentByBucket = new();
@@ -84,10 +86,17 @@ public sealed class AlarmScheduler
     /// QG_* env vars. Empty disables.</summary>
     public string? WebhookCommand { get; set; }
 
-    public AlarmScheduler(Dispatcher dispatcher, ToastService toast, FiredRulesStore fired)
+    public AlarmScheduler(
+        Dispatcher dispatcher,
+        IToastService toast,
+        FiredRulesStore fired,
+        Func<DateTimeOffset>? utcNow = null,
+        Func<bool>? shouldSuppressToasts = null)
     {
         _toast = toast;
         _fired = fired;
+        _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
+        _shouldSuppressToasts = shouldSuppressToasts ?? FocusAssist.ShouldSuppressToasts;
 
         // 15 s polling — fine-grained enough that the 5m / at-reset tiers
         // fire promptly, cheap enough to ignore.
@@ -114,7 +123,7 @@ public sealed class AlarmScheduler
         var state = _latest?.State;
         if (state is null) return;
 
-        var now = DateTimeOffset.UtcNow;
+        var now = _utcNow();
         EvaluateProvider("claude", state.Providers.Claude, now);
         EvaluateProvider("codex", state.Providers.Codex, now);
     }
@@ -150,13 +159,29 @@ public sealed class AlarmScheduler
                     "Fresh quota available.", ResetWavPath, providerKey, bucket, "R2");
             }
 
+            var u3Key = $"{providerKey}-{bucket.Id}-U3-{Iso(bucket.ResetIso)}";
+
+            // U3 — anomaly / spike. Evaluate before R3 so a same-snapshot
+            // spike at 100% suppresses the zero-state toast instead of
+            // double-notifying for one event.
+            if (AnomalyDetectionEnabled
+                && _historyByBucket.TryGetValue(bucket.Id, out var history))
+            {
+                var spike = QuotaGlass.Shared.AnomalyDetector.DetectSpike(history);
+                if (spike is not null)
+                {
+                    FireOnce(u3Key, $"{Human(providerKey)} {Human(bucket)} usage spike",
+                        $"Sudden jump to {bucket.PercentUsed:0}% — burn rate well above baseline.",
+                        CustomWavPath, providerKey, bucket, "U3");
+                }
+            }
+
             // R3 — zero-state. Bucket reached or crossed 100%. R4-Q-08 — if
-            // U3 (anomaly) just fired for the same reset window, suppress
-            // R3 so the user doesn't get a double-toast for one event.
+            // U3 (anomaly) fired for the same reset window, suppress R3 so
+            // the user doesn't get a double-toast for one event.
             if (bucket.PercentUsed >= 100)
             {
                 var key = $"{providerKey}-{bucket.Id}-R3-{Iso(bucket.ResetIso)}";
-                var u3Key = $"{providerKey}-{bucket.Id}-U3-{Iso(bucket.ResetIso)}";
                 if (!_fired.HasFired(u3Key))
                 {
                     FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at 100%",
@@ -178,20 +203,6 @@ public sealed class AlarmScheduler
                     FireOnce(key, $"{Human(providerKey)} {Human(bucket)} at {bucket.PercentUsed:0}%",
                         $"Threshold {threshold:0}% reached. Resets {HumanReset(bucket)}.", CustomWavPath,
                         providerKey, bucket, $"U1-{threshold:0}");
-                }
-            }
-
-            // U3 — anomaly / spike. Fires once per resetISO per bucket.
-            if (AnomalyDetectionEnabled
-                && _historyByBucket.TryGetValue(bucket.Id, out var history))
-            {
-                var spike = QuotaGlass.Shared.AnomalyDetector.DetectSpike(history);
-                if (spike is not null)
-                {
-                    var spikeKey = $"{providerKey}-{bucket.Id}-U3-{Iso(bucket.ResetIso)}";
-                    FireOnce(spikeKey, $"{Human(providerKey)} {Human(bucket)} usage spike",
-                        $"Sudden jump to {bucket.PercentUsed:0}% — burn rate well above baseline.",
-                        CustomWavPath, providerKey, bucket, "U3");
                 }
             }
 
@@ -253,7 +264,7 @@ public sealed class AlarmScheduler
         // R3-P2-04 — DND-equivalent states swallow the toast but we still
         // mark the key fired so we don't backfire after the user leaves
         // Focus Assist. Matches the R1 ladder cold-start fix semantics.
-        if (RespectFocusAssist && FocusAssist.ShouldSuppressToasts())
+        if (RespectFocusAssist && _shouldSuppressToasts())
         {
             _fired.MarkFired(key);
             return;

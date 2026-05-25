@@ -7,6 +7,11 @@ using Windows.UI.Notifications;
 
 namespace QuotaGlass.Widget.Services;
 
+public interface IToastService
+{
+    void Show(string title, string? body = null, string? customWavPath = null, string? tag = null, IReadOnlyList<ToastAction>? actions = null);
+}
+
 /// <summary>
 /// Hand-rolled toast notifier on raw <see cref="ToastNotificationManager"/>.
 /// No <c>Microsoft.Toolkit.Uwp.Notifications</c> dependency — that package
@@ -19,7 +24,7 @@ namespace QuotaGlass.Widget.Services;
 /// in lockstep with the toast.
 /// </summary>
 [SupportedOSPlatform("windows10.0.17763.0")]
-public sealed class ToastService
+public sealed class ToastService : IToastService
 {
     /// <summary>
     /// AppUserModelID for toast grouping / Action Center identity.
