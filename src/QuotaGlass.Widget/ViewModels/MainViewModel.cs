@@ -11,6 +11,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly SnapshotWatcher _watcher;
     private readonly DispatcherTimer _countdownTimer;
+    private readonly AlarmScheduler? _alarms;
     private string _statusText = "Starting up…";
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -33,11 +34,13 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    public MainViewModel(Dispatcher dispatcher)
+    public MainViewModel(Dispatcher dispatcher, AlarmScheduler? alarms = null)
     {
         _watcher = new SnapshotWatcher(dispatcher);
         _watcher.SnapshotChanged += OnSnapshot;
+        _watcher.SnapshotChanged += (_, m) => _alarms?.OnSnapshot(m);
         _watcher.StatusChanged += (_, s) => StatusText = s;
+        _alarms = alarms;
 
         _countdownTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
         {
@@ -53,6 +56,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         _watcher.Start();
         _countdownTimer.Start();
+        _alarms?.Start();
     }
 
     private void OnSnapshot(object? sender, SnapshotMessage message)
@@ -127,6 +131,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose()
     {
+        _alarms?.Stop();
         _countdownTimer.Stop();
         _watcher.Dispose();
     }

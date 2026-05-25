@@ -51,14 +51,14 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] **R2-P1-02** — `MaxDepth = 16` on `SnapshotJsonContext`; `MessagePump` translates depth errors to `"max-depth-exceeded"` ack.
 - [x] **F-A14** — `Shared/AllowedOrigins.cs` is the single source of truth for permitted callers; `MessagePump` rejects unlisted origins with `"origin-rejected"`.
 
-### Batch 3 — Toast + TopMost (alarm UX foundation)
+### Batch 3 — Toast + TopMost (alarm UX foundation) ✅
 
-- [ ] **R2-P0-01** — Drop `Microsoft.Toolkit.Uwp.Notifications` package; remove transitive `System.Drawing.Common 4.7.0` (GHSA-rxg9-xrhp-64gj). Write `Services/ToastService.cs` on raw `Windows.UI.Notifications`.
-- [ ] **R2-P0-02** — `Services/TopMostEnforcer.cs` with WinEvent `EVENT_SYSTEM_FOREGROUND` hook on dedicated STA thread.
-- [ ] **R2-P0-03** — Custom audio via `System.Media.SoundPlayer.Play()` + `<audio silent="true"/>` in toast XML. **Authoritative finding: `<audio src="file:///">` is silently ignored.**
-- [ ] **N-12** — Toast notification adapter (rolls in with R2-P0-01).
-- [ ] **N-13** — Alarm-ladder scheduler (24/12/6/3/1h, 30/15/5m, at-reset; configurable; fire-once idempotency `<provider>-<bucket>-<tier>-<resetISO>`).
-- [ ] **N-14** — Zero-state R3 toast (bucket flips to `percentUsed >= 100`).
+- [x] **R2-P0-01** — `Microsoft.Toolkit.Uwp.Notifications` dropped; `dotnet list package --vulnerable` is clean. `Services/ToastService.cs` is hand-rolled on raw `Windows.UI.Notifications`.
+- [x] **R2-P0-02** — `Services/TopMostEnforcer.cs` re-asserts `HWND_TOPMOST` on every `EVENT_SYSTEM_FOREGROUND` change via a dedicated STA thread; instantiated in `MainWindow.OnSourceInitialized`.
+- [x] **R2-P0-03** — `ToastService.Show` uses `<audio silent="true"/>` and plays the user's WAV via `SoundPlayer.Play()` directly.
+- [x] **N-12** — Toast notification adapter shipped (`ToastService`).
+- [x] **N-13** — `Services/AlarmScheduler.cs` evaluates the full ladder (24/12/6/3/1h, 30/15/5m, at-reset) every 15 s with fire-once idempotency keyed `<provider>-<bucket>-R1-<lead>-<resetISO>`; persisted in `Services/FiredRulesStore.cs` at `%LOCALAPPDATA%\QuotaGlass\fired-rules.json`.
+- [x] **N-14** — Zero-state R3 + R2 renewal-arrived + U1 75/90/95 threshold rules all live in `AlarmScheduler.EvaluateProvider`.
 
 ### Batch 4 — Widget polish
 
