@@ -58,5 +58,9 @@ public static class AtomicJsonFile
         {
             return null;
         }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 }

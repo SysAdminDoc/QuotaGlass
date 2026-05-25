@@ -57,16 +57,7 @@ public sealed class ToastActivator : INotificationActivationCallback
     {
         if (string.IsNullOrEmpty(invokedArgs)) return;
 
-        // Argument shape produced by ToastService.Show:
-        //   action=snooze;bucket=<id>;duration=PT1H
-        //   action=open;url=https://...
-        var parts = invokedArgs.Split(';');
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in parts)
-        {
-            var idx = p.IndexOf('=');
-            if (idx > 0) map[p[..idx]] = p[(idx + 1)..];
-        }
+        var map = ToastActionArguments.Parse(invokedArgs);
 
         if (!map.TryGetValue("action", out var action)) return;
 
@@ -108,6 +99,46 @@ public sealed class ToastActivator : INotificationActivationCallback
             });
         }
         catch { }
+    }
+}
+
+internal static class ToastActionArguments
+{
+    public static string Build(params (string Key, string Value)[] values)
+    {
+        return string.Join(";", values
+            .Where(v => !string.IsNullOrEmpty(v.Key))
+            .Select(v => $"{v.Key}={Uri.EscapeDataString(v.Value)}"));
+    }
+
+    public static IReadOnlyDictionary<string, string> Parse(string invokedArgs)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(invokedArgs)) return map;
+
+        foreach (var part in invokedArgs.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var idx = part.IndexOf('=');
+            if (idx <= 0) continue;
+
+            var key = part[..idx];
+            if (string.IsNullOrWhiteSpace(key)) continue;
+            map[key] = Decode(part[(idx + 1)..]);
+        }
+
+        return map;
+    }
+
+    private static string Decode(string value)
+    {
+        try
+        {
+            return Uri.UnescapeDataString(value);
+        }
+        catch (UriFormatException)
+        {
+            return value;
+        }
     }
 }
 

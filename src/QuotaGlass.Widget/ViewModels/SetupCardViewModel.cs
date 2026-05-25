@@ -13,7 +13,7 @@ namespace QuotaGlass.Widget.ViewModels;
 [SupportedOSPlatform("windows")]
 public sealed class SetupCardViewModel : INotifyPropertyChanged
 {
-    private readonly HealthCheck _check = new();
+    private readonly Func<HealthSnapshot> _probe;
     private readonly DispatcherTimer _timer;
     private readonly SettingsStore? _settings;
     private HealthSnapshot _last;
@@ -48,10 +48,11 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
 
     public string TroubleshootingUrl => "https://github.com/SysAdminDoc/QuotaGlass#install";
 
-    public SetupCardViewModel(Dispatcher dispatcher, SettingsStore? settings = null)
+    public SetupCardViewModel(Dispatcher dispatcher, SettingsStore? settings = null, Func<HealthSnapshot>? probe = null)
     {
         _settings = settings;
-        _last = _check.Probe();
+        _probe = probe ?? new HealthCheck().Probe;
+        _last = _probe();
         _isVisible = ShouldBeVisible(_last);
 
         _timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
@@ -82,10 +83,15 @@ public sealed class SetupCardViewModel : INotifyPropertyChanged
 
     public void Refresh()
     {
-        var next = _check.Probe();
-        if (next == _last) return;
+        var next = _probe();
+        var visible = ShouldBeVisible(next);
+        if (next == _last)
+        {
+            IsVisible = visible;
+            return;
+        }
         _last = next;
-        IsVisible = ShouldBeVisible(next);
+        IsVisible = visible;
         Raise(nameof(ExtensionStepLabel));
         Raise(nameof(NmhStepLabel));
         Raise(nameof(SnapshotStepLabel));

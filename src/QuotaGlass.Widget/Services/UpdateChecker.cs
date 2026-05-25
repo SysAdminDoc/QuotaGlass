@@ -65,14 +65,13 @@ public static class UpdateChecker
             if (!IsNewer(latest, CurrentVersion)) return null;
 
             var arch = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64";
-            var wantedSuffix = $"-win-{arch}.exe";
             var assets = node["assets"]?.AsArray();
             if (assets is null) return null;
 
             foreach (var asset in assets)
             {
                 var name = asset?["name"]?.GetValue<string>() ?? string.Empty;
-                if (name.EndsWith(wantedSuffix, StringComparison.OrdinalIgnoreCase))
+                if (IsWidgetPortableAsset(name, arch))
                 {
                     var url = asset?["browser_download_url"]?.GetValue<string>();
                     if (!string.IsNullOrEmpty(url))
@@ -99,6 +98,13 @@ public static class UpdateChecker
         return !string.Equals(latest, current, StringComparison.Ordinal);
     }
 
+    internal static bool IsWidgetPortableAsset(string name, string arch)
+    {
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(arch)) return false;
+        return name.StartsWith("QuotaGlass-Widget-", StringComparison.OrdinalIgnoreCase)
+            && name.EndsWith($"-win-{arch}.exe", StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// Spawn a PowerShell script that downloads the update, kills the
     /// current process, copies the EXE in place, and relaunches. Returns
@@ -112,20 +118,7 @@ public static class UpdateChecker
         var tempExe = Path.Combine(Path.GetTempPath(), "QuotaGlass_update.exe");
         var scriptPath = Path.Combine(Path.GetTempPath(), "QuotaGlass_update.ps1");
 
-        var script =
-            "Write-Host 'Downloading QuotaGlass update...' -ForegroundColor Cyan\r\n" +
-            $"$ProgressPreference = 'SilentlyContinue'\r\n" +
-            $"Invoke-WebRequest -UseBasicParsing -Uri '{update.DownloadUrl}' -OutFile '{tempExe}'\r\n" +
-            "Write-Host 'Stopping QuotaGlass...' -ForegroundColor Yellow\r\n" +
-            $"Stop-Process -Id {currentPid} -Force -ErrorAction SilentlyContinue\r\n" +
-            "Start-Sleep -Milliseconds 800\r\n" +
-            "Write-Host 'Installing update...' -ForegroundColor Yellow\r\n" +
-            $"Copy-Item '{tempExe}' '{currentExe}' -Force\r\n" +
-            $"Remove-Item '{tempExe}' -Force -ErrorAction SilentlyContinue\r\n" +
-            "Write-Host 'Relaunching...' -ForegroundColor Green\r\n" +
-            $"Start-Process '{currentExe}'\r\n" +
-            "Start-Sleep -Seconds 2\r\n" +
-            $"Remove-Item '{scriptPath}' -Force -ErrorAction SilentlyContinue\r\n";
+        var script = BuildSelfReplaceScript(update, currentExe, currentPid, tempExe, scriptPath);
 
         File.WriteAllText(scriptPath, script);
 
@@ -138,4 +131,29 @@ public static class UpdateChecker
             WindowStyle = ProcessWindowStyle.Minimized,
         });
     }
+
+    internal static string BuildSelfReplaceScript(
+        UpdateInfo update,
+        string currentExe,
+        int currentPid,
+        string tempExe,
+        string scriptPath)
+    {
+        return
+            "Write-Host 'Downloading QuotaGlass update...' -ForegroundColor Cyan\r\n" +
+            $"$ProgressPreference = 'SilentlyContinue'\r\n" +
+            $"Invoke-WebRequest -UseBasicParsing -Uri {PowerShellSingleQuote(update.DownloadUrl)} -OutFile {PowerShellSingleQuote(tempExe)}\r\n" +
+            "Write-Host 'Stopping QuotaGlass...' -ForegroundColor Yellow\r\n" +
+            $"Stop-Process -Id {currentPid} -Force -ErrorAction SilentlyContinue\r\n" +
+            "Start-Sleep -Milliseconds 800\r\n" +
+            "Write-Host 'Installing update...' -ForegroundColor Yellow\r\n" +
+            $"Copy-Item {PowerShellSingleQuote(tempExe)} {PowerShellSingleQuote(currentExe)} -Force\r\n" +
+            $"Remove-Item {PowerShellSingleQuote(tempExe)} -Force -ErrorAction SilentlyContinue\r\n" +
+            "Write-Host 'Relaunching...' -ForegroundColor Green\r\n" +
+            $"Start-Process {PowerShellSingleQuote(currentExe)}\r\n" +
+            "Start-Sleep -Seconds 2\r\n" +
+            $"Remove-Item {PowerShellSingleQuote(scriptPath)} -Force -ErrorAction SilentlyContinue\r\n";
+    }
+
+    internal static string PowerShellSingleQuote(string value) => "'" + value.Replace("'", "''") + "'";
 }

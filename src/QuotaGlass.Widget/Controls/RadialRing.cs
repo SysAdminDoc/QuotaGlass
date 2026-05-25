@@ -54,6 +54,18 @@ public sealed class RadialRing : FrameworkElement
         typeof(RadialRing),
         new FrameworkPropertyMetadata(Brushes.Tomato, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public static readonly DependencyProperty WarnPercentProperty = DependencyProperty.Register(
+        nameof(WarnPercent),
+        typeof(double),
+        typeof(RadialRing),
+        new FrameworkPropertyMetadata(60.0, FrameworkPropertyMetadataOptions.AffectsRender, OnVisualPropertyChanged));
+
+    public static readonly DependencyProperty DangerPercentProperty = DependencyProperty.Register(
+        nameof(DangerPercent),
+        typeof(double),
+        typeof(RadialRing),
+        new FrameworkPropertyMetadata(85.0, FrameworkPropertyMetadataOptions.AffectsRender, OnVisualPropertyChanged));
+
     public double Percent
     {
         get => (double)GetValue(PercentProperty);
@@ -88,6 +100,18 @@ public sealed class RadialRing : FrameworkElement
     {
         get => (Brush)GetValue(DangerBrushProperty);
         set => SetValue(DangerBrushProperty, value);
+    }
+
+    public double WarnPercent
+    {
+        get => (double)GetValue(WarnPercentProperty);
+        set => SetValue(WarnPercentProperty, value);
+    }
+
+    public double DangerPercent
+    {
+        get => (double)GetValue(DangerPercentProperty);
+        set => SetValue(DangerPercentProperty, value);
     }
 
     protected override Size MeasureOverride(Size availableSize)
@@ -150,10 +174,17 @@ public sealed class RadialRing : FrameworkElement
         if (clamped <= 0) return;
 
         var sweepDegrees = clamped / 100.0 * 360.0;
+        var warnPercent = Math.Clamp(WarnPercent, 0, 100);
+        var dangerPercent = Math.Clamp(DangerPercent, 0, 100);
+        if (dangerPercent < warnPercent)
+        {
+            (warnPercent, dangerPercent) = (dangerPercent, warnPercent);
+        }
+
         var sweepBrush = clamped switch
         {
-            >= 85 => DangerBrush,
-            >= 60 => WarnBrush,
+            var value when value >= dangerPercent => DangerBrush,
+            var value when value >= warnPercent => WarnBrush,
             _ => SafeBrush,
         };
 

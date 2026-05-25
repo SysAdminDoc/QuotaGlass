@@ -12,11 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **R5-N1** - Setup card literals now flow through `Resources/Strings.cs` via `x:Static`, proving the localization scaffold works from XAML before the full RESX migration.
 - **R5-N2** - `AlarmSchedulerTests` cover R1 fire-once dedup, snooze suppression, Focus Assist suppression, and U3/R3 interaction using an injectable toast sink, clock, and suppression predicate.
 - **MainWindow.xaml.cs split** - tray wiring, update prompting, and bucket snooze context menu logic now live in `TrayCoordinator`, `UpdatePrompt`, and `BucketContextMenuService`.
+- **Pass 6 regression coverage** - Added focused tests for diagnostics redaction, schema v3 merge preservation, multi-account alarm evaluation, toast action argument encoding, updater asset/script guards, setup-card dismissal refresh, calendar ordering, bucket pace marker clamping, and settings reset semantics. Local verification: .NET SDK 9.0.314, 101 passed.
 
 ### Fixed
 
 - **U3/R3 double-toast ordering** - anomaly detection now runs before zero-state handling so a same-snapshot usage spike at 100% suppresses the R3 toast instead of notifying twice for one event.
 - **R5-P1-03** - Toast activator CLSID changed to `{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}` and the Inno shortcut registration now uses the same distinct GUID, eliminating the visual near-collision with the installer AppId.
+- **Diagnostics privacy/completeness** - Redaction now walks nested provider/account arrays recursively across both snapshot files and redacts `alarms.webhookCommand` so bearer tokens or webhook URLs do not leak into support bundles.
+- **Snapshot merge data loss** - `SnapshotWatcher.Merge` now preserves schema v2 history and schema v3 `claudeAccounts` / `codexAccounts` instead of dropping fields from merged extension + local-credentials snapshots.
+- **Multi-account alarms** - `AlarmScheduler` now evaluates schema v3 provider account lists, so secondary Claude/Codex account buckets can fire the same R1/R2/R3/U1/U2/U3 rule families as primary accounts.
+- **Toast action parsing** - Snooze/Open action arguments are now URL-encoded and decoded, preventing bucket IDs containing `;` or `=` from corrupting the activator command map.
+- **Self updater hardening** - Update discovery now selects only `QuotaGlass-Widget-*-win-{arch}.exe` assets, and the self-replace PowerShell script escapes single-quoted URL/path literals.
+- **Setup card dismissal expiry** - The setup card re-evaluates the dismissal timestamp even when health state is unchanged, so a 24-hour dismissal no longer persists until a separate health transition or restart.
+- **Settings reset contract** - Reset-to-defaults now preserves autostart and setup-card dismissal state, reapplies the default theme, and refreshes all settings-bound UI properties.
+- **Stale-state escalation** - Widget status can now progress from stale to very-stale after 30 minutes without waiting for a fresh snapshot transition.
+- **Tray regressions** - Tray "Refresh now" is wired back to the snapshot refresh path, and the tray badge updates when existing bucket percentages change, not only when cards are added or removed.
+- **Calendar/ring polish** - The 7-day reset calendar now sorts entries within a day, pace markers clamp safely for over-100% buckets, and ring warn/danger colors use the configured display thresholds instead of hard-coded values.
+- **Scheduled task XML encoding** - The scheduled-task registration temp XML is written as UTF-16 to match its XML declaration.
+- **Atomic JSON reads** - Permission-denied reads now fail soft like malformed or locked files.
+
+### Changed
+
+- **README refresh** - README now reflects the v0.9+ feature set, current build/publish paths, direct credential polling, multi-account support, and current test count instead of the old v0.1 pre-release instructions.
+- **Release workflow robustness** - The release job no longer hides missing portable EXEs with `|| true`, ensures `installer/dist` exists, and tolerates the x64/arm64 matrix race when creating the same GitHub release.
 
 ## [0.9.0] — 2026-05-25
 

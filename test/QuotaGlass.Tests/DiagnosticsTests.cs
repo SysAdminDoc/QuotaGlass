@@ -63,11 +63,36 @@ public sealed class DiagnosticsTests : IDisposable
           }
         }
         """);
+        File.WriteAllText(AppPaths.LocalCredsSnapshotFile, """
+        {
+          "schemaVersion": 3,
+          "ts": "2026-06-01T12:01:00Z",
+          "state": {
+            "providers": {
+              "claudeAccounts": [
+                {
+                  "ok": true,
+                  "provider": "claude",
+                  "orgId": "sensitive-secondary-org-abc"
+                }
+              ],
+              "codexAccounts": [
+                {
+                  "ok": true,
+                  "provider": "codex",
+                  "accountId": "sensitive-secondary-account-def"
+                }
+              ]
+            }
+          }
+        }
+        """);
         File.WriteAllText(AppPaths.SettingsFile, """
         {
           "alarms": {
             "customWavPath": "C:\\Users\\Alice\\very-long-private-path\\alarm.wav",
-            "resetWavPath": "C:\\Users\\Alice\\reset.wav"
+            "resetWavPath": "C:\\Users\\Alice\\reset.wav",
+            "webhookCommand": "curl -H \"Authorization: Bearer secret-token\" https://example.invalid"
           }
         }
         """);
@@ -95,10 +120,19 @@ public sealed class DiagnosticsTests : IDisposable
             Assert.DoesNotContain("sensitive-account-67890", snapText);
             Assert.Contains("redacted", snapText);
 
+            var localCredsEntry = zip.Entries.First(e => e.FullName == "snapshot.local-creds.redacted.json");
+            using var srLocalCreds = new StreamReader(localCredsEntry.Open());
+            var localCredsText = srLocalCreds.ReadToEnd();
+            Assert.DoesNotContain("sensitive-secondary-org-abc", localCredsText);
+            Assert.DoesNotContain("sensitive-secondary-account-def", localCredsText);
+            Assert.Contains("redacted", localCredsText);
+
             var settingsEntry = zip.Entries.First(e => e.FullName == "settings.redacted.json");
             using var sr2 = new StreamReader(settingsEntry.Open());
             var settingsText = sr2.ReadToEnd();
             Assert.DoesNotContain("very-long-private-path", settingsText);
+            Assert.DoesNotContain("secret-token", settingsText);
+            Assert.Contains("\"webhookCommand\": \"redacted\"", settingsText);
         }
         finally
         {

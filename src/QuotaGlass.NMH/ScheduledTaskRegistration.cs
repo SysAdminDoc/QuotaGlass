@@ -55,7 +55,7 @@ internal static class ScheduledTaskRegistration
         try
         {
             var xmlPath = Path.Combine(Path.GetTempPath(), $"QuotaGlass-task-{Guid.NewGuid():N}.xml");
-            File.WriteAllText(xmlPath, BuildTaskXml(exePath, intervalMinutes), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            File.WriteAllText(xmlPath, BuildTaskXml(exePath, intervalMinutes), Encoding.Unicode);
 
             // /F overwrites if exists. /XML reads the schedule from our file.
             // Per-user task — no /RU SYSTEM, no /RL HIGHEST.

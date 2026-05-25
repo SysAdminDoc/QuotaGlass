@@ -166,13 +166,7 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         _store.Changed += (_, _) =>
         {
             // External writes (e.g. via JSON edit) should refresh the UI.
-            Raise(nameof(AlarmsEnabled));
-            Raise(nameof(Autostart));
-            Raise(nameof(RefreshMinutes));
-            Raise(nameof(WarnPercent));
-            Raise(nameof(DangerPercent));
-            Raise(nameof(LadderLabel));
-            Raise(nameof(CustomWavPath));
+            RaiseAllSettingsProperties();
             RebuildLadderTiers();
         };
     }
@@ -212,8 +206,11 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
         // Preserve position so the widget doesn't jump back to (40,40).
         fresh.Widget.X = _store.Current.Widget.X;
         fresh.Widget.Y = _store.Current.Widget.Y;
+        fresh.Widget.Autostart = _store.Current.Widget.Autostart;
         fresh.Widget.HasShownFirstRunToast = _store.Current.Widget.HasShownFirstRunToast;
+        fresh.Widget.SetupCardDismissedUntilUtc = _store.Current.Widget.SetupCardDismissedUntilUtc;
         _store.Replace(fresh);
+        ThemeService.Apply(fresh.Display.Theme);
     }
 
     public enum WavSlot { Custom, Reset, ZeroState }
@@ -246,6 +243,27 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
 
     private void Raise([CallerMemberName] string? prop = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
+
+    private void RaiseAllSettingsProperties()
+    {
+        Raise(nameof(AlarmsEnabled));
+        Raise(nameof(PaceEnabled));
+        Raise(nameof(RespectFocusAssist));
+        Raise(nameof(WebhookCommand));
+        Raise(nameof(Theme));
+        Raise(nameof(IsLightTheme));
+        Raise(nameof(IsDarkTheme));
+        Raise(nameof(IsHighContrastTheme));
+        Raise(nameof(IsSystemTheme));
+        Raise(nameof(Autostart));
+        Raise(nameof(RefreshMinutes));
+        Raise(nameof(WarnPercent));
+        Raise(nameof(DangerPercent));
+        Raise(nameof(LadderLabel));
+        Raise(nameof(CustomWavPath));
+        Raise(nameof(ResetWavPath));
+        Raise(nameof(ZeroStateWavPath));
+    }
 }
 
 /// <summary>

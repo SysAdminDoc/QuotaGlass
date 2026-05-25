@@ -149,7 +149,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
             if (remainingMinutes <= 0) return double.NaN;
 
             var projected = last.PercentUsed + slope * remainingMinutes;
-            return Math.Clamp(projected, _model.PercentUsed, 100);
+            return Math.Clamp(projected, Percent, 100);
         }
     }
 
@@ -163,6 +163,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         _sparkline = samples ?? Array.Empty<HistorySample>();
         Raise(nameof(SparklineData));
         Raise(nameof(HasSparkline));
+        Raise(nameof(PaceMarkerPercent));
     }
 
     public void SetStale(double opacity)
@@ -192,6 +193,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
         Raise(nameof(AccountLabel));
         Raise(nameof(HasAccountLabel));
         Raise(nameof(HoverTooltip));
+        Raise(nameof(PaceMarkerPercent));
     }
 
     /// <summary>R3-P2-01 scaffold — short account identifier (orgId/accountId

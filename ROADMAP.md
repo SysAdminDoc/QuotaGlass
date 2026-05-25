@@ -1,8 +1,8 @@
 # Roadmap - pending work only
 
 **Last updated:** 2026-05-25
-**Current baseline:** v0.9.0 plus Unreleased v0.10 work on `main`.
-**Verification baseline:** `dotnet test QuotaGlass.sln` passes with .NET SDK 9.0.314: 91 passed, 0 failed.
+**Current baseline:** v0.9.0 plus Unreleased v0.10 hardening work on `main`.
+**Verification baseline:** `dotnet test QuotaGlass.sln --no-restore` passes with .NET SDK 9.0.314: 101 passed, 0 failed.
 
 This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGELOG.md) by release and are intentionally not duplicated here. Background evidence lives in the research dossiers:
 
@@ -11,6 +11,7 @@ This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGEL
 - [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) - post-v0.1.0 audit.
 - [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md) - post-v0.4.0 audit.
 - [RESEARCH_PASS_5.md](RESEARCH_PASS_5.md) - post-v0.8.0 audit and v0.9/v0.10 queue.
+- [RESEARCH_PASS_6.md](RESEARCH_PASS_6.md) - production hardening audit: diagnostics, schema merge, alarms, updater, tray, settings, docs, release workflow.
 - [docs/research.md](docs/research.md) - original scaffold dossier.
 - [docs/extension-integration.md](docs/extension-integration.md) - wire schema spec.
 - [docs/bridge-integration.md](docs/bridge-integration.md) - extension-side drop-in code.
@@ -41,4 +42,4 @@ Blocked items do not stop autonomous execution when unblocked tasks exist.
 
 ## Next Autonomous Pick
 
-No unblocked local implementation tasks remain. Resume with **R5-P0-02** when a real Claude Code OAuth environment is available, or promote one deferred product bet above if demand changes.
+No unblocked local implementation tasks remain after Pass 6. Resume with **R5-P0-02** when a real Claude Code OAuth environment is available, or promote one deferred product bet above if demand changes.

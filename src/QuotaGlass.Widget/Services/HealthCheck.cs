@@ -31,14 +31,15 @@ public sealed class HealthCheck
     public HealthSnapshot Probe()
     {
         var nmhRegistered = ChromiumKeys.Any(KeyExists) || KeyExists(FirefoxKey);
-        var snapshotExists = File.Exists(AppPaths.SnapshotFile);
+        var snapshotPath = LatestSnapshotPath();
+        var snapshotExists = snapshotPath is not null;
 
         DateTimeOffset? snapshotTs = null;
-        if (snapshotExists)
+        if (snapshotPath is not null)
         {
             try
             {
-                snapshotTs = File.GetLastWriteTimeUtc(AppPaths.SnapshotFile);
+                snapshotTs = File.GetLastWriteTimeUtc(snapshotPath);
             }
             catch { }
         }
@@ -55,6 +56,28 @@ public sealed class HealthCheck
             NmhRegistered: nmhRegistered,
             FirstSnapshotReceived: snapshotExists,
             LastSnapshotAt: snapshotTs);
+    }
+
+    private static string? LatestSnapshotPath()
+    {
+        var candidates = new List<(string Path, DateTime LastWriteUtc)>();
+        foreach (var path in new[] { AppPaths.SnapshotFile, AppPaths.LocalCredsSnapshotFile })
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    candidates.Add((path, File.GetLastWriteTimeUtc(path)));
+                }
+            }
+            catch
+            {
+                // Snapshot files can be swapped atomically while probing.
+            }
+        }
+
+        candidates.Sort((a, b) => b.LastWriteUtc.CompareTo(a.LastWriteUtc));
+        return candidates.Count == 0 ? null : candidates[0].Path;
     }
 
     private static bool KeyExists(string subKey)

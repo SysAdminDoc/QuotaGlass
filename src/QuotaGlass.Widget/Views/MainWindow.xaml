@@ -100,6 +100,8 @@
                                     <c:RadialRing Percent="{Binding Percent}"
                                                   Thickness="9"
                                                   PaceMarkerPercent="{Binding PaceMarkerPercent}"
+                                                  WarnPercent="{Binding DataContext.Settings.WarnPercent, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                  DangerPercent="{Binding DataContext.Settings.DangerPercent, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                   ReducedMotion="{Binding DataContext.ReducedMotion, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                   TrackBrush="{StaticResource Brush.Ring.Track}"
                                                   SafeBrush="{StaticResource Brush.Ring.Safe}"

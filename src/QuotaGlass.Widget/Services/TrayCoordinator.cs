@@ -1,3 +1,5 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
 using QuotaGlass.Widget.ViewModels;
 using Application = System.Windows.Application;
@@ -25,7 +27,7 @@ internal sealed class TrayCoordinator : IDisposable
 
         _tray.ShowRequested += (_, _) => ShowWindow();
         _tray.HideRequested += (_, _) => HideWindow();
-        _tray.RefreshRequested += (_, _) => { };
+        _tray.RefreshRequested += (_, _) => _vm.RefreshNow();
         _tray.SettingsRequested += (_, _) =>
         {
             ShowWindow();
@@ -35,7 +37,11 @@ internal sealed class TrayCoordinator : IDisposable
         _tray.ResetPositionRequested += (_, _) => _resetPosition();
         _tray.QuitRequested += (_, _) => Application.Current.Shutdown();
 
-        _vm.Buckets.CollectionChanged += (_, _) => RefreshBadge();
+        _vm.Buckets.CollectionChanged += OnBucketsChanged;
+        foreach (var bucket in _vm.Buckets)
+        {
+            bucket.PropertyChanged += OnBucketPropertyChanged;
+        }
         _vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MainViewModel.Buckets)) RefreshBadge();
@@ -56,6 +62,35 @@ internal sealed class TrayCoordinator : IDisposable
         _tray.UpdateBadge(worst);
     }
 
+    private void OnBucketsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (BucketViewModel bucket in e.OldItems)
+            {
+                bucket.PropertyChanged -= OnBucketPropertyChanged;
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (BucketViewModel bucket in e.NewItems)
+            {
+                bucket.PropertyChanged += OnBucketPropertyChanged;
+            }
+        }
+
+        RefreshBadge();
+    }
+
+    private void OnBucketPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BucketViewModel.Percent))
+        {
+            RefreshBadge();
+        }
+    }
+
     private void ShowWindow()
     {
         _window.Show();
@@ -69,5 +104,13 @@ internal sealed class TrayCoordinator : IDisposable
         _tray.OnVisibilityChanged(false);
     }
 
-    public void Dispose() => _tray.Dispose();
+    public void Dispose()
+    {
+        _vm.Buckets.CollectionChanged -= OnBucketsChanged;
+        foreach (var bucket in _vm.Buckets)
+        {
+            bucket.PropertyChanged -= OnBucketPropertyChanged;
+        }
+        _tray.Dispose();
+    }
 }

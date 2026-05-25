@@ -125,7 +125,18 @@ public sealed class AlarmScheduler
 
         var now = _utcNow();
         EvaluateProvider("claude", state.Providers.Claude, now);
+        EvaluateProviderList("claude", state.Providers.ClaudeAccounts, now);
         EvaluateProvider("codex", state.Providers.Codex, now);
+        EvaluateProviderList("codex", state.Providers.CodexAccounts, now);
+    }
+
+    private void EvaluateProviderList(string providerKey, IReadOnlyList<ProviderSnapshot>? providers, DateTimeOffset now)
+    {
+        if (providers is null) return;
+        foreach (var provider in providers)
+        {
+            EvaluateProvider(providerKey, provider, now);
+        }
     }
 
     private void EvaluateProvider(string providerKey, ProviderSnapshot? provider, DateTimeOffset now)
@@ -295,11 +306,16 @@ public sealed class AlarmScheduler
         };
         var list = new List<ToastAction>
         {
-            new("Snooze 1h", $"action=snooze;bucket={bucket.Id};duration=PT1H"),
+            new("Snooze 1h", ToastActionArguments.Build(
+                ("action", "snooze"),
+                ("bucket", bucket.Id),
+                ("duration", "PT1H"))),
         };
         if (!string.IsNullOrEmpty(analyticsUrl))
         {
-            list.Add(new ToastAction("Open analytics", $"action=open;url={analyticsUrl}"));
+            list.Add(new ToastAction("Open analytics", ToastActionArguments.Build(
+                ("action", "open"),
+                ("url", analyticsUrl))));
         }
         return list;
     }

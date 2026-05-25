@@ -58,6 +58,8 @@ public sealed class SnapshotWatcher : IDisposable
         ReloadAndPublish(); // prime on launch
     }
 
+    public void Refresh() => ReloadAndPublish();
+
     private void OnFsEvent(object sender, FileSystemEventArgs e)
     {
         _dispatcher.BeginInvoke(() =>
@@ -126,7 +128,10 @@ public sealed class SnapshotWatcher : IDisposable
                 {
                     Claude = PickProvider(primary.State?.Providers.Claude, secondary.State?.Providers.Claude),
                     Codex = PickProvider(primary.State?.Providers.Codex, secondary.State?.Providers.Codex),
+                    ClaudeAccounts = PickProviderList(primary.State?.Providers.ClaudeAccounts, secondary.State?.Providers.ClaudeAccounts),
+                    CodexAccounts = PickProviderList(primary.State?.Providers.CodexAccounts, secondary.State?.Providers.CodexAccounts),
                 },
+                History = MergeHistory(primary.State?.History, secondary.State?.History),
             },
         };
         return merged;
@@ -140,6 +145,27 @@ public sealed class SnapshotWatcher : IDisposable
         // wins so the user sees the freshest data.
         if (!primary.Ok && secondary.Ok) return secondary;
         return primary;
+    }
+
+    private static List<ProviderSnapshot>? PickProviderList(List<ProviderSnapshot>? primary, List<ProviderSnapshot>? secondary)
+    {
+        if (primary is { Count: > 0 }) return primary;
+        return secondary is { Count: > 0 } ? secondary : null;
+    }
+
+    private static Dictionary<string, List<HistorySample>>? MergeHistory(
+        Dictionary<string, List<HistorySample>>? primary,
+        Dictionary<string, List<HistorySample>>? secondary)
+    {
+        if (primary is null || primary.Count == 0) return secondary;
+        if (secondary is null || secondary.Count == 0) return primary;
+
+        var merged = new Dictionary<string, List<HistorySample>>(secondary, StringComparer.Ordinal);
+        foreach (var (bucketId, samples) in primary)
+        {
+            merged[bucketId] = samples;
+        }
+        return merged;
     }
 
     public void Dispose()

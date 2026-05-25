@@ -58,10 +58,11 @@ public sealed class CalendarViewModel : INotifyPropertyChanged
         foreach (var day in days.Values.OrderBy(d => d.Date))
         {
             if (day.Resets.Count == 0) continue;
-            foreach (var entry in day.Resets.OrderBy(r => r.ResetLocal).ToList())
+            var ordered = day.Resets.OrderBy(r => r.ResetLocal).ToList();
+            day.Resets.Clear();
+            foreach (var entry in ordered)
             {
-                // No-op; just ensures the collection is sorted before display.
-                _ = entry;
+                day.Resets.Add(entry);
             }
             Days.Add(day);
         }

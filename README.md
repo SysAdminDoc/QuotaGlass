@@ -1,6 +1,6 @@
 # QuotaGlass
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6.svg)](#install)
 [![Stack](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](#build-from-source)
@@ -9,16 +9,18 @@
 
 QuotaGlass is the **desktop companion** to the [AI-Usage_Tracker](https://github.com/SysAdminDoc/AI-Usage_Tracker) browser extension. The extension already handles the authenticated API path against `claude.ai` and `chatgpt.com`. QuotaGlass surfaces that data on your desktop as a floating widget with OS-native toasts, so you don't have to keep a tab open or pin the popup.
 
-## Features (v0.1.0)
+## Features
 
 - **Floating glass widget** — borderless, always-on-top, draggable, snaps to screen edges. Catppuccin Mocha by default, no pill backdrops, 8–12 px corner radii.
 - **Per-provider radial-ring countdowns** — one card per Claude / Codex bucket, percent-used in the ring, time-to-reset in the center.
 - **OS toast notifications with custom sound** — drop in any `.wav`, `.mp3`, `.m4a`, `.aac`, or `.wma` (WAV plays via `SoundPlayer`; everything else via WPF `MediaPlayer` / Media Foundation). Fires at user-configurable thresholds.
-- **Reset alarm ladder** — pop a toast at 24 h, 12 h, 6 h, 3 h, 1 h, 30 m, 15 m, 5 m, and at-reset. Each tier independently toggleable.
+- **Reset alarm ladder** — pop a toast at 24 h, 12 h, 6 h, 3 h, 1 h, 30 m, 15 m, 5 m, and at-reset. Each tier is independently toggleable, and bucket toasts include Snooze 1h / Open analytics actions.
 - **Zero-state alert** — special toast when a bucket hits 0% remaining (you've burned the whole window).
-- **Live data via native messaging** — the extension pipes snapshots into QuotaGlass's local daemon over Chrome's `chrome.runtime.connectNative` API; no second auth surface.
-- **Snapshot persistence** — last-known usage cached to `%LOCALAPPDATA%\QuotaGlass\snapshot.json`, so the widget shows something useful even when Chrome is closed.
-- **Settings panel** — embedded, in-widget, async; no separate window. Refresh interval, alarm ladder, custom sound, theme.
+- **Live data via native messaging + named pipe** — the extension pipes snapshots into QuotaGlass's local daemon over `chrome.runtime.connectNative`; the widget also listens to a low-latency local named pipe for direct credential polling updates.
+- **Direct credential polling fallback** — optional `QuotaGlass.NMH.exe --poll-credentials` reads Claude Code / Codex / Hermes credential files and writes `snapshot.local-creds.json`, then the widget merges both producers without card flicker.
+- **Multi-account support** — schema v3 can render Claude / Codex primary and secondary accounts with short account labels in tooltips.
+- **Snapshot persistence** — last-known usage cached to `%LOCALAPPDATA%\QuotaGlass\snapshot.json`, so the widget shows something useful even when the browser is closed.
+- **Settings panel** — embedded, in-widget, with alarm, display, integration, and advanced sections. Includes alarm ladder, custom sounds, theme/high-contrast/system-theme mode, webhooks, and autostart.
 - **Embedded log panel** — collapsed by default, surfaces NMH connection state and last fetch error if any.
 
 ## How it works
@@ -58,10 +60,6 @@ QuotaGlass is the **desktop companion** to the [AI-Usage_Tracker](https://github
 
 ## Install
 
-> **Status: pre-release.** No installer is published yet. The instructions below describe the v0.1.0 path; see [ROADMAP.md](ROADMAP.md) Phase 1 Batch 8 for shipping status. Build-from-source works today (see next section).
-
-When v0.1.0 ships:
-
 1. Install the [AI-Usage_Tracker extension](https://github.com/SysAdminDoc/AI-Usage_Tracker) (Chrome / Edge / Brave / Firefox). The extension version that adds native-messaging support will be ≥ 0.2.0.
 2. Download `QuotaGlass-Setup-vX.Y.Z.exe` from the [Releases page](https://github.com/SysAdminDoc/QuotaGlass/releases/latest).
 3. Run the installer. Windows SmartScreen will prompt because v0.1.x binaries are unsigned — click **More info** → **Run anyway**. The installer:
@@ -77,8 +75,8 @@ When v0.1.0 ships:
 ```bash
 cd ~/repos/QuotaGlass
 dotnet build QuotaGlass.sln -c Release
-dotnet publish src/QuotaGlass.Widget/QuotaGlass.Widget.csproj -c Release -r win-x64 --self-contained false
-dotnet publish src/QuotaGlass.NMH/QuotaGlass.NMH.csproj    -c Release -r win-x64 --self-contained false
+dotnet publish src/QuotaGlass.Widget/QuotaGlass.Widget.csproj -c Release -r win-x64 --self-contained false -o artifacts/publish/win-x64
+dotnet publish src/QuotaGlass.NMH/QuotaGlass.NMH.csproj    -c Release -r win-x64 --self-contained false -o artifacts/publish/win-x64
 ```
 
 For ARM64 (Surface Pro X / Snapdragon-X laptops), swap `win-x64` → `win-arm64`.
@@ -88,13 +86,13 @@ Requires .NET 9 SDK (`winget install Microsoft.DotNet.SDK.9`).
 To register the native messaging host against a local build:
 
 ```bash
-./publish/QuotaGlass.NMH.exe --register
+artifacts/publish/win-x64/QuotaGlass.NMH.exe --register
 ```
 
 To wipe local state during dev:
 
 ```bash
-./publish/QuotaGlass.NMH.exe --purge
+artifacts/publish/win-x64/QuotaGlass.NMH.exe --purge
 ```
 
 To exercise the widget in isolation (without the extension/NMH chain):
@@ -109,7 +107,7 @@ dotnet run --project src/QuotaGlass.Widget -- --inject-fake-snapshot
 dotnet test QuotaGlass.sln -c Release
 ```
 
-37+ tests across 6 fixture files: `AtomicJsonFile`, `SchemaVersion`, `SnapshotSchema`, `LadderEvaluator` (R1 cold-start walk), `CredentialPoller` (F-N1 token classification + header parsing), `PlanInference` (plan auto-detect heuristics), `AnomalyDetector` (U3 spike detection).
+101 tests across the shared persistence/schema layer, NMH credential and diagnostics paths, widget snapshot merging, alarm scheduling, updater guards, toast-action parsing, and view-model regressions.
 
 ## OSS landscape & why this exists
 
@@ -126,7 +124,7 @@ See [docs/research.md](docs/research.md) for the full survey. TL;DR:
 ## Privacy
 
 - Nothing leaves your machine. No analytics, no telemetry, no remote servers.
-- The native messaging channel is process-local stdin/stdout — it cannot be sniffed by other apps.
+- The native messaging channel is process-local stdin/stdout, and the low-latency named pipe is local-user scoped.
 - Snapshots are written to your local `%LOCALAPPDATA%` folder. Delete the folder, delete the history.
 - Source is fully auditable; no obfuscation, no minification.
 

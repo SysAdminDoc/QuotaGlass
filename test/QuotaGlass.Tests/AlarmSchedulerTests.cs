@@ -85,6 +85,46 @@ public sealed class AlarmSchedulerTests : IDisposable
         Assert.True(fired.HasFired(Key("R3", bucket.Id, resetAt)));
     }
 
+    [Fact]
+    public void Multi_account_buckets_are_evaluated_and_action_arguments_are_encoded()
+    {
+        var toast = new RecordingToastService();
+        var fired = new FiredRulesStore(_firedPath);
+        var scheduler = NewScheduler(toast, fired);
+        scheduler.Ladder = Array.Empty<TimeSpan>();
+        var resetAt = _now + TimeSpan.FromMinutes(30);
+        var bucket = Bucket("acct=work;session", percent: 100, resetAt);
+
+        scheduler.OnSnapshot(new SnapshotMessage
+        {
+            Kind = "snapshot",
+            SchemaVersion = SchemaVersion.Current,
+            Timestamp = _now,
+            State = new ExtensionState
+            {
+                FetchedAtIso = _now,
+                Providers = new ProviderMap
+                {
+                    ClaudeAccounts = new()
+                    {
+                        new ProviderSnapshot
+                        {
+                            Ok = true,
+                            Provider = "claude",
+                            OrgId = "work",
+                            Buckets = { bucket },
+                        },
+                    },
+                },
+            },
+        });
+
+        Assert.Single(toast.Shown);
+        var action = Assert.Single(toast.Shown[0].Actions!, a => a.Content == "Snooze 1h");
+        Assert.Contains("bucket=acct%3Dwork%3Bsession", action.Arguments);
+        Assert.Equal(bucket.Id, ToastActionArguments.Parse(action.Arguments)["bucket"]);
+    }
+
     private AlarmScheduler NewScheduler(
         IToastService toast,
         FiredRulesStore fired,

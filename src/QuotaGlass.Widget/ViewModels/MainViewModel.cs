@@ -162,15 +162,18 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         if (!_lastSnapshotTs.HasValue) return;
         var age = DateTimeOffset.UtcNow - _lastSnapshotTs.Value;
-        var nowStale = age > StaleAfter;
-        if (nowStale == _isStale) return;
-        _isStale = nowStale;
         var (kind, opacity, prefix) = age > VeryStaleAfter
             ? ("very-stale", 0.5, "STALE — ")
             : age > StaleAfter
                 ? ("stale", 0.75, "Stale — ")
                 : ("info", 1.0, string.Empty);
 
+        if (kind == StatusKind && ((kind == "info" && !_isStale) || (kind != "info" && _isStale)))
+        {
+            return;
+        }
+
+        _isStale = kind != "info";
         StatusKind = kind;
         StatusText = $"{prefix}Last update: {_lastSnapshotTs.Value.ToLocalTime():t} ({FormatAge(age)} ago)";
         foreach (var b in Buckets) b.SetStale(opacity);
@@ -191,6 +194,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _pipe.Start();
         _countdownTimer.Start();
         _alarms?.Start();
+    }
+
+    public void RefreshNow()
+    {
+        _watcher.Refresh();
+        Setup.Refresh();
     }
 
     private void OnSnapshot(object? sender, SnapshotMessage message)

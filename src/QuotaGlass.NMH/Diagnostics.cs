@@ -17,6 +17,8 @@ namespace QuotaGlass.NMH;
 ///   - <c>customWavPath</c>, <c>resetWavPath</c>, <c>zeroStateWavPath</c> →
 ///     last 12 chars only (preserves diagnostic value: extension + filename
 ///     hint, no full path leak).
+///   - <c>webhookCommand</c> → <c>"redacted"</c> because users often place
+///     bearer tokens or webhook URLs directly in the command string.
 /// </summary>
 public static class Diagnostics
 {
@@ -179,15 +181,32 @@ public static class Diagnostics
 
     private static void RedactSnapshotIdentifiers(JsonNode? root)
     {
-        if (root is not JsonObject envelope) return;
-        if (envelope["state"] is not JsonObject state) return;
-        if (state["providers"] is not JsonObject providers) return;
+        if (root is null) return;
+        RedactIdentifierKeys(root);
+    }
 
-        foreach (var providerName in new[] { "claude", "codex" })
+    private static void RedactIdentifierKeys(JsonNode node)
+    {
+        if (node is JsonObject obj)
         {
-            if (providers[providerName] is not JsonObject p) continue;
-            if (p["orgId"] is not null) p["orgId"] = "redacted";
-            if (p["accountId"] is not null) p["accountId"] = "redacted";
+            foreach (var key in new[] { "orgId", "accountId" })
+            {
+                if (obj[key] is not null) obj[key] = "redacted";
+            }
+
+            foreach (var child in obj.Select(kv => kv.Value).ToList())
+            {
+                if (child is not null) RedactIdentifierKeys(child);
+            }
+            return;
+        }
+
+        if (node is JsonArray arr)
+        {
+            foreach (var child in arr)
+            {
+                if (child is not null) RedactIdentifierKeys(child);
+            }
         }
     }
 
@@ -201,6 +220,10 @@ public static class Diagnostics
             {
                 alarms[prop] = s.Length <= 12 ? s : "…" + s[^12..];
             }
+        }
+        if (alarms["webhookCommand"]?.GetValue<string?>() is string cmd && !string.IsNullOrWhiteSpace(cmd))
+        {
+            alarms["webhookCommand"] = "redacted";
         }
     }
 
