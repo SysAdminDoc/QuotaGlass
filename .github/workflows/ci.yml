@@ -1,0 +1,56 @@
+name: CI
+
+# Build + test on every push and PR so regressions are caught before merge.
+# Release artifacts are produced separately by .github/workflows/release.yml
+# on manual workflow_dispatch.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "assets/**"
+      - "docs/**"
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build + test (windows-latest)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore QuotaGlass.sln
+
+      - name: Build (Release, no restore)
+        run: dotnet build QuotaGlass.sln -c Release --no-restore
+
+      - name: Test (Release, no build)
+        run: dotnet test QuotaGlass.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Vulnerable-package audit
+        run: dotnet list QuotaGlass.sln package --vulnerable --include-transitive
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: ignore

@@ -183,8 +183,24 @@
                                   Margin="0,0,0,6"
                                   IsChecked="{Binding Settings.Autostart}" />
                         <TextBlock Style="{StaticResource SubText}"
-                                   Text="{Binding Settings.LadderLabel, StringFormat=Reset ladder: {0}}"
+                                   Text="Reset ladder (uncheck to suppress a tier):"
                                    Margin="0,6,0,2" />
+                        <ItemsControl ItemsSource="{Binding Settings.LadderTiers}" Margin="0,2,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:LadderTierViewModel}">
+                                    <CheckBox Content="{Binding Label}"
+                                              IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                              Foreground="{StaticResource Brush.Card.BodyText}"
+                                              Margin="0,2,10,2"
+                                              ToolTip="Toggle this lead-time toast" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -211,18 +227,22 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Style="{StaticResource SubText}" Text="Warn at %" />
+                                <TextBlock Style="{StaticResource SubText}" Text="Warn at %"
+                                           ToolTip="Ring turns peach above this percentage." />
                                 <TextBox Text="{Binding Settings.WarnPercent, UpdateSourceTrigger=LostFocus}"
                                          Background="{StaticResource Brush.Window.Background}"
                                          Foreground="{StaticResource Brush.Card.BodyText}"
-                                         BorderBrush="{StaticResource Brush.Card.Border}" />
+                                         BorderBrush="{StaticResource Brush.Card.Border}"
+                                         ToolTip="Ring turns peach above this percentage." />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <TextBlock Style="{StaticResource SubText}" Text="Danger at %" />
+                                <TextBlock Style="{StaticResource SubText}" Text="Danger at %"
+                                           ToolTip="Ring turns red above this percentage." />
                                 <TextBox Text="{Binding Settings.DangerPercent, UpdateSourceTrigger=LostFocus}"
                                          Background="{StaticResource Brush.Window.Background}"
                                          Foreground="{StaticResource Brush.Card.BodyText}"
-                                         BorderBrush="{StaticResource Brush.Card.Border}" />
+                                         BorderBrush="{StaticResource Brush.Card.Border}"
+                                         ToolTip="Ring turns red above this percentage." />
                             </StackPanel>
                         </Grid>
                     </StackPanel>

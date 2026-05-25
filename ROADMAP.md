@@ -1,11 +1,12 @@
 # Roadmap — single source of truth
 
-**Last updated:** 2026-05-25 · **Current:** v0.1.0-dev (commit `b9061b7` + research dossiers).
+**Last updated:** 2026-05-25 · **Current:** v0.1.0 shipped (commit `100165e`); v0.1.1 + v0.2.0 work in progress.
 
-This file is the **executable** TODO. It merges the original three planning files. Background and evidence still live in:
+This file is the **executable** TODO. It merges the original three planning files plus Pass 3 post-ship findings. Background and evidence still live in:
 
 - [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) — Pass 1 audit (positioning, schemas, F-A*/F-N*).
 - [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) — Pass 2 audit (R2-P0-*, R2-P1-*, Pass 1 corrections).
+- [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) — Pass 3 post-ship audit (R3-P0-*, R3-P1-*, R3-P2-*, 5 bugs in shipped code).
 - [docs/research.md](docs/research.md) — original scaffold dossier (sections corrected by Pass 2).
 
 Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
@@ -26,6 +27,25 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] `docs/research.md` — original landscape research (Pass 2 correction applied below).
 - [x] [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) — Pass 1 deep audit.
 - [x] [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) — Pass 2 deep audit.
+- [x] [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) — Pass 3 post-ship audit (5 shipped bugs).
+
+---
+
+## Phase 0' — v0.1.1 bug-fix point release ✅
+
+Surfaced by [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md). Five real bugs in the shipped v0.1.0 code plus three polish items — all landed this session.
+
+- [x] **P0 — R3-P0-01** — R1 ladder walks smallest-first; cascade suppressed by marking missed earlier tiers fired. ([AlarmScheduler.cs](src/QuotaGlass.Widget/Services/AlarmScheduler.cs))
+- [x] **P0 — R3-P0-02** — HICON freed via `DestroyIcon` P/Invoke + handle-tracking field on every badge swap and on dispose. ([TrayIconService.cs](src/QuotaGlass.Widget/Services/TrayIconService.cs))
+- [x] **P0 — R3-P0-03** — `Brush.Window.MicaBackground` (Mocha.Base@0.35) added to the dictionary; `MicaBackdrop.TryApply` swaps `Brush.Window.Background` to it on success. ([MicaBackdrop.cs](src/QuotaGlass.Widget/Services/MicaBackdrop.cs), [Theme/CatppuccinMocha.xaml](src/QuotaGlass.Widget/Theme/CatppuccinMocha.xaml))
+- [x] **P0 — R3-P0-04** — `win-x64;win-arm64` on NMH csproj. ([QuotaGlass.NMH.csproj](src/QuotaGlass.NMH/QuotaGlass.NMH.csproj))
+- [x] **P0 — R3-P0-05** — `LadderTierViewModel` + WrapPanel of CheckBoxes wired through `SettingsStore.Update`. ([SettingsPanelViewModel.cs](src/QuotaGlass.Widget/ViewModels/SettingsPanelViewModel.cs), [Views/MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml))
+- [x] **P1 — R3-P1-04** — [.github/workflows/ci.yml](.github/workflows/ci.yml) on push + PR; build + test + vulnerable-package audit.
+- [x] **P1 — R3-P1-05** — README WAV-only wording corrected; MP3/M4A noted as v0.2.0 NAudio work.
+- [x] **P1 — R3-P1-06** — `Settings.Widget.HasShownFirstRunToast` gates `_tray.NotifyFirstRun()` in `MainWindow.Loaded`.
+- [x] **bonus** — AlarmScheduler R2 gate loosened (drop-detect by 25-point delta, not absolute < 10).
+- [x] **bonus** — `FiredRulesStore.Save` swallows IOException + UnauthorizedAccessException so AV scans can't crash the scheduler.
+- [x] **bonus** — Tooltip hints on Warn% / Danger% TextBoxes.
 
 ---
 
@@ -115,6 +135,18 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 ---
 
 ## Phase 2 — v0.2.0 polish + true differentiator
+
+Pass 3 additions interleaved at top.
+
+- [ ] **P1 — R3-P1-01** — Single-instance Mutex (`Global\QuotaGlass.Widget`). Second instance focuses the first then exits. Prevents `settings.json` lost-update on double-launch.
+- [ ] **P1 — R3-P1-02** — `QuotaGlass.NMH.exe --collect-diagnostics` zips logs + redacted snapshot/settings + meta.txt into `%TEMP%\quotaglass-diag-{ts}.zip`.
+- [ ] **P1 — R3-P1-03** — Pace alarm tier (U2 family). PaceCalculator output today renders silently in the card footer; route it through AlarmScheduler.
+- [ ] **P1 — R3-P1-08** — Tray "Check for updates" menu entry wiring `UpdateChecker.CheckAsync` + restart confirm.
+- [ ] **P2 — R3-P1-07** — Setup card "dismiss for 24 h" affordance.
+- [ ] **P2 — R3-P2-02** — Widget-side history ring buffer (`%LOCALAPPDATA%\QuotaGlass\history.json`, 24 samples × N buckets) — enables NX-08 sparklines without bumping wire schema.
+- [ ] **P2 — R3-P2-05** — DPI-safe ring center text (Viewbox-wrap so it doesn't overflow at ≥200% scale).
+- [ ] **P2 — R3-P2-06** — Per-bucket mute/snooze (right-click card → snooze 1h/6h/24h/until-reset).
+- [ ] **P2 — R3-P2-07** — Tray menu "Reset position" entry (resets Widget.X/Y to 40,40).
 
 - [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates. **(Large feature; warrants its own session.)**
 - [ ] **R2-P1-05** — Hermes credential source (folds into F-N1).

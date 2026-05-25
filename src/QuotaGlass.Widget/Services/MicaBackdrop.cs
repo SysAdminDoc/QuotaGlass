@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Application = System.Windows.Application;
 using Brushes = System.Windows.Media.Brushes;
 
 namespace QuotaGlass.Widget.Services;
@@ -49,10 +50,25 @@ public static class MicaBackdrop
             var backdrop = (int)(acrylic ? BackdropType.Acrylic : BackdropType.Mica);
             DwmSetWindowAttribute(hwnd, DwmwaSystemBackdropType, ref backdrop, sizeof(int));
 
-            // Backdrop requires a transparent window background; preserve a
-            // hint of color through the system backdrop by using a low-alpha
-            // brush on the chrome border in XAML.
+            // Backdrop requires a transparent window background AND a thin
+            // chrome-border alpha. Otherwise the Mocha.Base @ 0.92 brush in
+            // WindowChromeBorder occludes the Mica composition.
+            // R3-P0-03: swap the Brush.Window.Background app-resource to the
+            // thin-alpha variant so every consumer (chrome border included)
+            // becomes transparent to Mica.
             window.Background = Brushes.Transparent;
+            try
+            {
+                var resources = Application.Current?.Resources;
+                if (resources is not null && resources.Contains("Brush.Window.MicaBackground"))
+                {
+                    resources["Brush.Window.Background"] = resources["Brush.Window.MicaBackground"];
+                }
+            }
+            catch
+            {
+                // Resource swap is purely cosmetic — never fail TryApply on this.
+            }
             return true;
         }
         catch

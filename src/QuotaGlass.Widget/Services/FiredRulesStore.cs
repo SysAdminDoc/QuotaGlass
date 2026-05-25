@@ -60,7 +60,19 @@ public sealed class FiredRulesStore
 
     private void Save()
     {
-        AtomicJsonFile.Write(_path, _state, FiredRulesJsonContext.Default.FiredRulesState);
+        // Best-effort — an AV scan or transient share lock on the JSON file
+        // must not crash the alarm scheduler. The next successful Save will
+        // catch up to the same state because _state is in-memory authoritative.
+        try
+        {
+            AtomicJsonFile.Write(_path, _state, FiredRulesJsonContext.Default.FiredRulesState);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 }
 

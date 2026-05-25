@@ -46,7 +46,13 @@ public partial class MainWindow : Window
         Loaded += (_, _) =>
         {
             _vm.Start();
-            _tray.NotifyFirstRun();
+            // R3-P1-06 — gate the balloon to first-run only. Set the flag
+            // before showing the balloon so a crash mid-show doesn't replay.
+            if (!_vm.SettingsStore.Current.Widget.HasShownFirstRunToast)
+            {
+                _vm.SettingsStore.Update(s => s.Widget.HasShownFirstRunToast = true);
+                _tray.NotifyFirstRun();
+            }
             _tray.OnVisibilityChanged(IsVisible);
         };
         Closed += (_, _) =>

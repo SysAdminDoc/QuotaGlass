@@ -114,6 +114,13 @@ public sealed class WidgetSettings
 
     [JsonPropertyName("startMinimized")]
     public bool StartMinimized { get; set; }
+
+    /// <summary>
+    /// R3-P1-06 — gates the "QuotaGlass is in your tray" balloon tip so it
+    /// fires only on the very first run, not on every subsequent launch.
+    /// </summary>
+    [JsonPropertyName("hasShownFirstRunToast")]
+    public bool HasShownFirstRunToast { get; set; }
 }
 
 public sealed class DisplaySettings

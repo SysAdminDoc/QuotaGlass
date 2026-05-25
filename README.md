@@ -13,7 +13,7 @@ QuotaGlass is the **desktop companion** to the [AI-Usage_Tracker](https://github
 
 - **Floating glass widget** — borderless, always-on-top, draggable, snaps to screen edges. Catppuccin Mocha by default, no pill backdrops, 8–12 px corner radii.
 - **Per-provider radial-ring countdowns** — one card per Claude / Codex bucket, percent-used in the ring, time-to-reset in the center.
-- **OS toast notifications with custom sound** — drop in any `.wav`/`.mp3`/`.m4a`, fires at user-configurable thresholds.
+- **OS toast notifications with custom sound** — drop in any `.wav` file (MP3/M4A support is planned for v0.2 via NAudio); fires at user-configurable thresholds.
 - **Reset alarm ladder** — pop a toast at 24 h, 12 h, 6 h, 3 h, 1 h, 30 m, 15 m, 5 m, and at-reset. Each tier independently toggleable.
 - **Zero-state alert** — special toast when a bucket hits 0% remaining (you've burned the whole window).
 - **Live data via native messaging** — the extension pipes snapshots into QuotaGlass's local daemon over Chrome's `chrome.runtime.connectNative` API; no second auth surface.

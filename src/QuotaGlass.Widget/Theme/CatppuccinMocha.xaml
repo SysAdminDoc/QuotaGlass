@@ -32,6 +32,13 @@
 
     <!--  Brushes consumed by controls  -->
     <SolidColorBrush x:Key="Brush.Window.Background" Color="{StaticResource Mocha.Base}" Opacity="0.92" />
+    <!--
+        R3-P0-03: when MicaBackdrop.TryApply succeeds on Win11 22621+, the
+        WindowChromeBorder background gets swapped to this thin-alpha brush so
+        DWM Mica is visible through the chrome. On Win10 / older Win11 the
+        Brush.Window.Background remains in effect (full Mocha.Base @ 0.92).
+    -->
+    <SolidColorBrush x:Key="Brush.Window.MicaBackground" Color="{StaticResource Mocha.Base}" Opacity="0.35" />
     <SolidColorBrush x:Key="Brush.Window.Border" Color="{StaticResource Mocha.Surface1}" />
     <SolidColorBrush x:Key="Brush.Card.Background" Color="{StaticResource Mocha.Mantle}" Opacity="0.88" />
     <SolidColorBrush x:Key="Brush.Card.Border" Color="{StaticResource Mocha.Surface0}" />

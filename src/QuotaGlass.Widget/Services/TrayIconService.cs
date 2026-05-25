@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Windows;
 using Application = System.Windows.Application;
@@ -16,6 +17,13 @@ namespace QuotaGlass.Widget.Services;
 [SupportedOSPlatform("windows")]
 public sealed class TrayIconService : IDisposable
 {
+    // Win32 user-object handle freed in lockstep with each Icon swap so the
+    // tray doesn't bleed GDI handles. Icon.FromHandle does NOT take ownership
+    // of its HICON — Icon.Dispose leaves the underlying handle leaked.
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
     public event EventHandler? ShowRequested;
     public event EventHandler? HideRequested;
     public event EventHandler? RefreshRequested;
@@ -27,6 +35,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Forms.ToolStripMenuItem _hideItem;
     private bool _disposed;
     private double _badgePercent = 0;
+    private IntPtr _currentHIcon = IntPtr.Zero;
 
     public TrayIconService()
     {
@@ -45,11 +54,13 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new Forms.ToolStripMenuItem("Quit QuotaGlass", null,
             (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty)));
 
+        var (initialIcon, initialHandle) = RenderIcon(_badgePercent);
+        _currentHIcon = initialHandle;
         _icon = new Forms.NotifyIcon
         {
             Visible = true,
             Text = "QuotaGlass",
-            Icon = RenderIcon(_badgePercent),
+            Icon = initialIcon,
             ContextMenuStrip = menu,
         };
         _icon.DoubleClick += OnDoubleClick;
@@ -60,9 +71,19 @@ public sealed class TrayIconService : IDisposable
     {
         if (Math.Abs(_badgePercent - worstPercent) < 0.5) return;
         _badgePercent = worstPercent;
-        _icon.Icon?.Dispose();
-        _icon.Icon = RenderIcon(_badgePercent);
+
+        var previousIcon = _icon.Icon;
+        var previousHandle = _currentHIcon;
+
+        var (nextIcon, nextHandle) = RenderIcon(_badgePercent);
+        _currentHIcon = nextHandle;
+        _icon.Icon = nextIcon;
         _icon.Text = $"QuotaGlass — worst bucket {worstPercent:0}%";
+
+        // Dispose the managed wrapper, then release the Win32 HICON the wrapper
+        // didn't own. NotifyIcon retains its own reference until we reassign.
+        previousIcon?.Dispose();
+        if (previousHandle != IntPtr.Zero) DestroyIcon(previousHandle);
     }
 
     public void NotifyFirstRun()
@@ -92,7 +113,7 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
-    private static Icon RenderIcon(double percent)
+    private static (Icon Icon, IntPtr Handle) RenderIcon(double percent)
     {
         const int size = 32;
         using var bmp = new Bitmap(size, size);
@@ -123,7 +144,8 @@ public sealed class TrayIconService : IDisposable
                 g.DrawArc(sweepPen, 4, 4, size - 8, size - 8, -90, sweep);
             }
         }
-        return Icon.FromHandle(bmp.GetHicon());
+        var handle = bmp.GetHicon();
+        return (Icon.FromHandle(handle), handle);
     }
 
     public void Dispose()
@@ -133,5 +155,10 @@ public sealed class TrayIconService : IDisposable
         _icon.Visible = false;
         _icon.Icon?.Dispose();
         _icon.Dispose();
+        if (_currentHIcon != IntPtr.Zero)
+        {
+            DestroyIcon(_currentHIcon);
+            _currentHIcon = IntPtr.Zero;
+        }
     }
 }

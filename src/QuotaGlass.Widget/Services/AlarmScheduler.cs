@@ -101,11 +101,13 @@ public sealed class AlarmScheduler
             _lastPercentByBucket.TryGetValue(bucket.Id, out var prevPercent);
             _lastResetByBucket.TryGetValue(bucket.Id, out var prevReset);
 
-            // R2 — renewal-arrived. Detect by resetISO advancing AND prior
-            // utilization > 0 (avoids firing on first-ever snapshot).
+            // R2 — renewal-arrived. Detect by resetISO advancing AND a real
+            // drop in utilization (avoids firing on first-ever snapshot and
+            // tolerates the user already burning 10%+ in the first minute
+            // after reset).
             if (prevReset.HasValue && bucket.ResetIso.HasValue
                 && bucket.ResetIso.Value > prevReset.Value
-                && prevPercent > 0 && bucket.PercentUsed < 10)
+                && prevPercent > 25 && bucket.PercentUsed < prevPercent - 25)
             {
                 var key = $"{providerKey}-{bucket.Id}-R2-{Iso(bucket.ResetIso)}";
                 FireOnce(key, $"{Human(providerKey)} {Human(bucket)} renewed",
@@ -131,24 +133,49 @@ public sealed class AlarmScheduler
                 }
             }
 
-            // R1 — imminent-reset ladder. Walk biggest-first, fire the first
-            // un-fired tier whose lead time has elapsed.
-            if (bucket.ResetIso.HasValue)
+            // R1 — imminent-reset ladder. Walk SMALLEST-lead first so a cold
+            // start with multiple tiers already past doesn't fire the largest
+            // (stalest) tier first; instead, fire the closest-to-now tier and
+            // mark every earlier missed tier as fired-but-suppressed so we
+            // don't backfire stale toasts at 15s intervals.
+            if (bucket.ResetIso.HasValue && bucket.ResetIso.Value > DateTimeOffset.MinValue)
             {
                 var resetAt = bucket.ResetIso.Value;
-                foreach (var lead in Ladder)
+                if (now <= resetAt + TimeSpan.FromMinutes(2))
                 {
-                    var fireAt = resetAt - lead;
-                    if (now < fireAt) continue;
-                    if (now > resetAt + TimeSpan.FromMinutes(2)) continue; // past the window
-                    var key = $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
-                    if (_fired.HasFired(key)) continue;
-                    var title = lead == TimeSpan.Zero
-                        ? $"{Human(providerKey)} {Human(bucket)} resetting now"
-                        : $"{Human(providerKey)} {Human(bucket)} resets in {HumanLead(lead)}";
-                    var body = $"Currently {bucket.PercentUsed:0}% used.";
-                    FireOnce(key, title, body, CustomWavPath);
-                    break;
+                    var sortedLeads = Ladder.OrderBy(t => t).ToArray();
+                    TimeSpan? fireLead = null;
+                    foreach (var lead in sortedLeads)
+                    {
+                        var fireAt = resetAt - lead;
+                        if (now < fireAt) break; // remaining tiers haven't elapsed
+                        var key = $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
+                        if (_fired.HasFired(key)) continue;
+                        fireLead = lead;
+                        break;
+                    }
+
+                    if (fireLead.HasValue)
+                    {
+                        var lead = fireLead.Value;
+                        var key = $"{providerKey}-{bucket.Id}-R1-{FormatLead(lead)}-{Iso(bucket.ResetIso)}";
+                        var title = lead == TimeSpan.Zero
+                            ? $"{Human(providerKey)} {Human(bucket)} resetting now"
+                            : $"{Human(providerKey)} {Human(bucket)} resets in {HumanLead(lead)}";
+                        var body = $"Currently {bucket.PercentUsed:0}% used.";
+                        FireOnce(key, title, body, CustomWavPath);
+
+                        // Suppress every LARGER-lead (earlier) tier we already
+                        // missed — marking them fired prevents the cascade.
+                        foreach (var staleLead in sortedLeads)
+                        {
+                            if (staleLead <= lead) continue;
+                            var staleFireAt = resetAt - staleLead;
+                            if (now < staleFireAt) break;
+                            var staleKey = $"{providerKey}-{bucket.Id}-R1-{FormatLead(staleLead)}-{Iso(bucket.ResetIso)}";
+                            if (!_fired.HasFired(staleKey)) _fired.MarkFired(staleKey);
+                        }
+                    }
                 }
             }
 
