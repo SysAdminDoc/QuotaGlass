@@ -55,4 +55,37 @@
         <Setter Property="Margin" Value="0,18,0,0" />
     </Style>
 
+    <!-- v0.9 R5-N3 / Pass 5 Bug 2 — HitButton style moved from
+         MainWindow.xaml.Resources into this app-level dictionary so
+         extracted UserControls (SetupCard / Calendar / Log) resolve it
+         no matter where they're hosted. -->
+    <Style x:Key="HitButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Card.MutedText}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bg"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

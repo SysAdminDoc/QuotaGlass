@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Windows;
 using System.Windows.Media;
+using QuotaGlass.Shared;
 using QuotaGlass.Widget.Services;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;

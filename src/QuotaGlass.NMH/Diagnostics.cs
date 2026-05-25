@@ -33,6 +33,7 @@ public static class Diagnostics
                 AddMeta(zip);
                 AddLogs(zip);
                 AddRedactedSnapshot(zip);
+                AddRedactedLocalCredsSnapshot(zip); // R5-P0-01 — Pass 5 Bug 1
                 AddRedactedSettings(zip);
                 AddFiredRules(zip);
             }
@@ -121,6 +122,27 @@ public static class Diagnostics
         catch (Exception ex)
         {
             WriteEntry(zip, "snapshot.read-error.txt", $"Failed to redact snapshot: {ex.Message}");
+        }
+    }
+
+    private static void AddRedactedLocalCredsSnapshot(ZipArchive zip)
+    {
+        // R5-P0-01 — same redaction as AddRedactedSnapshot, but reads the
+        // sibling file written by `--poll-credentials` (R4-P1-02). Skipped
+        // silently when no credential-poll producer is configured.
+        if (!File.Exists(AppPaths.LocalCredsSnapshotFile)) return;
+        try
+        {
+            var raw = File.ReadAllText(AppPaths.LocalCredsSnapshotFile);
+            var node = JsonNode.Parse(raw);
+            RedactSnapshotIdentifiers(node);
+            WriteEntry(zip, "snapshot.local-creds.redacted.json",
+                node?.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) ?? raw);
+        }
+        catch (Exception ex)
+        {
+            WriteEntry(zip, "snapshot.local-creds.read-error.txt",
+                $"Failed to redact local-creds snapshot: {ex.Message}");
         }
     }
 

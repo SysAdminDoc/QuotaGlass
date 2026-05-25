@@ -109,7 +109,7 @@ public sealed class SnapshotPipeClient : IDisposable
             if (message is null) continue;
             if (!SchemaVersion.IsSupported(message.SchemaVersion)) continue;
 
-            _dispatcher.BeginInvoke(() => SnapshotReceived?.Invoke(this, message));
+            _ = _dispatcher.BeginInvoke(() => SnapshotReceived?.Invoke(this, message));
         }
     }
 }

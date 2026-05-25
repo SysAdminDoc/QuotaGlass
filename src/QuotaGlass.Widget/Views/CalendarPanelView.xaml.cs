@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using QuotaGlass.Widget.ViewModels;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace QuotaGlass.Widget.Views;
 

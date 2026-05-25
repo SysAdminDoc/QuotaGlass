@@ -1,11 +1,12 @@
 using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using QuotaGlass.Shared;
 using QuotaGlass.Widget.Services;
 using QuotaGlass.Widget.ViewModels;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
 
 namespace QuotaGlass.Widget.Views;
@@ -262,14 +263,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnOpenUrlFromTag(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
-        {
-            OpenUrlSafe(url);
-        }
-    }
-
     private void OnToggleSettings(object sender, RoutedEventArgs e) => _vm.Settings.Toggle();
 
     private void OnResetSettings(object sender, RoutedEventArgs e)
@@ -291,38 +284,9 @@ public partial class MainWindow : Window
 
     private void OnPickZeroStateWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile(SettingsPanelViewModel.WavSlot.ZeroState);
 
-    private void OnDismissSetup(object sender, RoutedEventArgs e) => _vm.Setup.DismissForDay();
-
-    private void OnRunRegisterClicked(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var exeDir = AppContext.BaseDirectory;
-            var nmhPath = Path.Combine(exeDir, "QuotaGlass.NMH.exe");
-            if (!File.Exists(nmhPath))
-            {
-                MessageBox.Show("QuotaGlass.NMH.exe not found alongside the widget. Run the installer.",
-                    "QuotaGlass", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = nmhPath,
-                Arguments = "--register",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-            };
-            using var proc = Process.Start(psi);
-            proc?.WaitForExit(5000);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Register failed: {ex.Message}", "QuotaGlass",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
+    // OnDismissSetup / OnRunRegisterClicked / OnOpenUrlFromTag moved into
+    // SetupCardView in v0.9 — DataContext was Setup; handlers now live with
+    // the UserControl that owns the buttons.
 
     private async Task CheckForUpdatesAsync()
     {

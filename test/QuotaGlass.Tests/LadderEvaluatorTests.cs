@@ -63,10 +63,13 @@ public sealed class LadderEvaluatorTests
             var now = resetAt - lead + TimeSpan.FromSeconds(1);
             var decision = LadderEvaluator.Evaluate(DefaultLadder, resetAt, now, HasFired);
 
-            Assert.Equal(lead, decision.FireLead);
+            Assert.NotNull(decision);
+            Assert.True(decision.FireLead.HasValue);
+            var fireLead = decision.FireLead.GetValueOrDefault();
+            Assert.Equal(lead, fireLead);
             Assert.Empty(decision.SuppressLeads);
 
-            fired.Add(decision.FireLead.Value);
+            fired.Add(fireLead);
         }
     }
 

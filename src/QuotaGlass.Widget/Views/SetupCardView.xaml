@@ -1,0 +1,42 @@
+<UserControl x:Class="QuotaGlass.Widget.Views.SetupCardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <!-- F-N3 Setup checklist. DataContext = SetupCardViewModel. -->
+    <Border Style="{StaticResource CardBorder}"
+            Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}"
+            Margin="0,0,0,8">
+        <StackPanel>
+            <TextBlock Style="{StaticResource HeaderText}" Text="Setup" />
+            <TextBlock Style="{StaticResource SubText}"
+                       Margin="0,6,0,2"
+                       Text="{Binding ExtensionStepLabel}" />
+            <TextBlock Style="{StaticResource SubText}"
+                       Margin="0,0,0,2"
+                       Text="{Binding NmhStepLabel}" />
+            <TextBlock Style="{StaticResource SubText}"
+                       Margin="0,0,0,6"
+                       Text="{Binding SnapshotStepLabel}" />
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Install extension"
+                        Style="{StaticResource HitButton}"
+                        Tag="{Binding ExtensionInstallUrl}"
+                        Click="OnOpenUrl" />
+                <Button Content="Run --register"
+                        Style="{StaticResource HitButton}"
+                        Click="OnRunRegister" />
+                <Button Content="Help"
+                        Style="{StaticResource HitButton}"
+                        Tag="{Binding TroubleshootingUrl}"
+                        Click="OnOpenUrl" />
+                <Button Content="Dismiss 24h"
+                        Style="{StaticResource HitButton}"
+                        Click="OnDismiss"
+                        ToolTip="Hide the setup card for 24 hours." />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

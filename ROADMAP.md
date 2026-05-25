@@ -1,99 +1,53 @@
-# Roadmap — pending work only
+# Roadmap - pending work only
 
-**Last updated:** 2026-05-25 · **Head:** `27108e2` · **Current shipped:** v0.4.0.
+**Last updated:** 2026-05-25
+**Current baseline:** v0.9.0 working tree, pending commit from `c945e0d`.
+**Verification baseline:** `dotnet test QuotaGlass.sln` passes with .NET SDK 9.0.314: 87 passed, 0 failed.
 
-This file is the **executable** TODO. Completed items live in [CHANGELOG.md](CHANGELOG.md) by release; do not duplicate them here. Background and evidence live in the research dossiers:
+This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGELOG.md) by release and are intentionally not duplicated here. Background evidence lives in the research dossiers:
 
-- [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) — Pass 1 audit (positioning, schemas, F-A* / F-N*).
-- [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) — Pass 2 audit (R2-P0-* / R2-P1-* / Pass 1 corrections).
-- [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) — Pass 3 post-ship audit (5 shipped bugs).
-- [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md) — Pass 4 post-v0.4.0 audit (6 bugs in v0.1.1..v0.4.0 work, v0.5+ queue).
-- [docs/research.md](docs/research.md) — original scaffold dossier.
-- [docs/extension-integration.md](docs/extension-integration.md) — wire schema spec.
-- [docs/bridge-integration.md](docs/bridge-integration.md) — extension-side drop-in code.
+- [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) - Pass 1 audit.
+- [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) - Pass 2 audit.
+- [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) - post-v0.1.0 audit.
+- [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md) - post-v0.4.0 audit.
+- [RESEARCH_PASS_5.md](RESEARCH_PASS_5.md) - post-v0.8.0 audit and v0.9/v0.10 queue.
+- [docs/research.md](docs/research.md) - original scaffold dossier.
+- [docs/extension-integration.md](docs/extension-integration.md) - wire schema spec.
+- [docs/bridge-integration.md](docs/bridge-integration.md) - extension-side drop-in code.
 
-Resolved open questions (defaulted by the autonomous agent, see CHANGELOG headers): self-hosted updater, AUMID, Win10 1809 minimum, unsigned binaries, etc.
-
----
-
-## Phase 4 — v0.5.0 — F-N1 fixes + Mica regression + perf ✅ (2026-05-25)
-
-Surfaced by [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md). All P0/P1 items + 9 quick wins shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
-
-- [x] **R4-P0-01..04** — F-N1 endpoint / token-shape / OAuth refresh / zero token burn.
-- [x] **R4-P0-03** — Mica + ThemeService coordination.
-- [x] **R4-P1-01** — HistoryStore debounce.
-- [x] **R4-P1-02** — Snapshot multi-source merge (`snapshot.json` + `snapshot.local-creds.json`).
-- [x] **R4-N1** — OAuth refresh-token rotation.
-- [x] **R4-N4** — `--poll-credentials` Scheduled Task auto-start.
-- [x] **R4-Q-01/03/04/05/06/07/08/09/11** — quick wins.
+Resolved decisions are captured in [CHANGELOG.md](CHANGELOG.md): self-hosted updater, AUMID, Win10 1809 minimum, unsigned binaries, no telemetry, no MSIX, no Tauri/Rainmeter/Avalonia pivot for the current product.
 
 ---
 
-## Phase 5 — v0.6.0 — Toast actions + schema v2 + tests ✅ (2026-05-25)
+## Blocked / Needs Human Runtime
 
-Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
+- [ ] **R5-P0-02 / R5-N6 - Verify Claude Code OAuth refresh endpoint.** Requires a real Claude Code install with OAuth credentials and network capture or CLI source confirmation. Until verified, keep the limitation documented: cached Claude Code OAuth access tokens may stop refreshing after expiry; users can rerun `claude login`.
+- [ ] **P3 - N-20 screenshots.** Needs the widget running against representative data so `assets/screenshots/` can show real cards, settings, log panel, high contrast, and setup states.
+- [ ] **R5-N7 - CI-triggering PR.** Requires GitHub PR workflow execution rather than direct local commit/push.
 
-- [x] **R4-N2 / L-04** — Toast actions via hand-rolled COM activator. ([Services/ToastActivator.cs](src/QuotaGlass.Widget/Services/ToastActivator.cs), [installer/quotaglass.iss](installer/quotaglass.iss))
-- [x] **R4-N3** — Schema v2 bundles `state.history` in the wire envelope.
-- [x] **R4-N7** — `XmlEscape` extracted to Shared + 6 unit tests covering all 5 XML entities.
-- [x] **HistoryStore + FiredRulesStore** moved into Shared + 10 unit tests (cap, dedupe, prune).
-- [x] **Diagnostics.Collect** zip integration test (redacts orgId/accountId/WAV paths).
-
-### Carried into v0.7
-
-- [ ] **R4-N5 / R3-P2-01 full** — Multi-account columns full UI (needs real data first).
-- [ ] **Architecture refactor** — MainWindow.xaml UserControl extraction (defer until CI has a chance to validate every PR).
-- [ ] **Settings panel sub-sections** — Alarms / Display / Integration / Advanced.
+Blocked items do not stop autonomous execution; continue with the next unblocked task.
 
 ---
 
-## Phase 6 — v0.7.0 ✅ (2026-05-25)
+## Phase 8 - v0.10.0 - localization proof + scheduler tests + cleanup
 
-Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
-
-- [x] **R4-N5 / R3-P2-01 full** — Multi-account columns. Schema v3 adds `ClaudeAccounts` / `CodexAccounts`. MainViewModel expands every account into cards.
-- [x] **R4-N6 / L-06** — Named-pipe `\\.\pipe\QuotaGlass.Snapshot` transport. Cuts snapshot→render latency from 250 ms to <10 ms; falls back to FileSystemWatcher when no listener.
-- [x] **R4-N8** — High-contrast theme (`Theme/HighContrast.xaml` bound to `SystemColors.*Key`) + "Follow system" mode (reads `SystemParameters.HighContrast` + AppsUseLightTheme registry).
-- [x] **R4-N9** — `Strings.cs` localization scaffold; English keys + `SetUiCulture` API ready for future RESX satellite assemblies.
-
-### Carried into v0.9+
-
-- [x] **P2 — Architecture refactor (partial)** — `CalendarPanelView.xaml` + `LogPanelView.xaml` extracted in v0.8. SetupCard + SettingsPanel still inline in MainWindow.xaml; defer (substantial XAML+event-handler rewire).
-- [x] **P2 — Settings panel sub-sections** — Alarms / Display / Integration / Advanced expanders shipped in v0.8.
-- [ ] **P3 — RESX satellite assemblies** — actually migrate XAML literals to `{x:Static res:Strings.AppTitle}` bindings once v0.7 stabilizes.
-- [ ] **P3 — SnapshotWatcher.Merge unit tests** — needs the test project to reach Widget assembly (cross-TFM).
-- [ ] **P3 — L-10** — Provider plugin contract (deferred until a real second-provider use case lands).
-- [ ] **P3 — N-20** — Manual screenshots for `assets/screenshots/`. Needs an actual runtime to capture.
-- [ ] **P3 — L-03 / UC-01 / UC-02** — Win11 Widgets board integration / Avalonia port / WinUI 3 port — under-consideration; no demand yet.
+- [ ] **R5-N1 - XAML to `Strings` proof-of-concept.** Wire one visible Setup/Card/Settings string through `Resources/Strings.cs` so the localization scaffold is exercised end-to-end before a full RESX migration.
+- [ ] **R5-N2 - AlarmScheduler dedup unit tests.** Add focused tests for fire-once behavior, snooze suppression, Focus Assist suppression, and U3/R3 interaction. Keep the production API small; introduce interfaces only if required by tests.
+- [ ] **R5-P1-03 - Rename CLSID near-collision.** Separate the toast activator CLSID from the Inno AppId GUID family so future maintenance does not confuse `...D2A2` with `...D2A1`. Update installer and registration docs in the same change.
+- [ ] **MainWindow.xaml.cs split.** Extract helper classes for tray wiring, update checks, and bucket context menu once tests are in place.
 
 ---
 
-## Carry-forward (older but still open)
+## Phase 9 - deferred product bets
 
-- [ ] **R-Log-02** — Correlation IDs across NMH ↔ Widget. Adds value only once multi-extension fan-in lands; deferred indefinitely.
-- [ ] **R2-P2-01** — Working-day Pace integration (Zrnik `Pace.cs` pattern). Power-user feature; defer until pace path proves out.
-- [ ] **L-12** — Native messaging companion to keep extension SW alive. Mostly handled by F-A4's 25 s ping; revisit if SW-death incidents recur.
-
----
-
-## Rejected (decisions captured — do not re-open)
-
-- **R-01..R-08, R2-NG-01..R2-NG-04** — see Pass 1 / Pass 2 dossiers for full rationale. Recap: no Rainmeter, no Tauri port, no direct Chromium cookie reads, no WPF re-implementation, no pill backdrops, no paid tier, no confetti, no GPL switch, no Jira/Toggl integrations, no MSIX, no verbatim CredentialStore port, no telemetry.
+- [ ] **P3 - L-10 provider plugin contract.** Deferred until a real second-provider use case exists.
+- [ ] **R-Log-02 - Correlation IDs across NMH and Widget.** Adds value once multi-extension fan-in or multi-NMH sessions exist.
+- [ ] **R2-P2-01 - Working-day Pace integration.** Power-user feature based on the Zrnik `Pace.cs` pattern.
+- [ ] **L-12 - Native messaging companion to keep extension service worker alive.** Mostly handled by the existing persistent-port 25 s ping; revisit only if service-worker death incidents recur.
+- [ ] **L-03 / UC-01 / UC-02 - Win11 Widgets board, Avalonia port, WinUI 3 port.** Under consideration; no current demand.
 
 ---
 
-## Themes covered (post-v0.4.0 snapshot)
+## Next Autonomous Pick
 
-| Category | Coverage |
-|---|---|
-| UX | NX-04..NX-09, L-02, L-08, R3-P2-05/06/07, R4-Q-06/09 |
-| Reliability | R1 ladder, HICON, FiredRulesStore, Mutex, R4-P0-01..04, R4-P1-01/02 |
-| Security | Toolkit-CVE removal, JSON depth cap, origin enforcement, URL scheme guard, F-N7 env-var pass |
-| Integrations | F-A1, F-A2, F-A4, F-N1 (broken — R4-P0-01..04 to fix), F-N7, L-10 |
-| Accessibility | F-A19, NX-07, UX-Acc-01..03 (closed), R4-N8 (open) |
-| Performance | F-A17, R4-P1-01, R4-N6 |
-| Distribution | F-N10, self-hosted updater, Inno installer, GH Releases workflow + CI |
-| Testing | 37 method-level tests across 6 fixtures (AtomicJsonFile, SchemaVersion, SnapshotSchema, Ladder, Credential, Plan, Anomaly) |
-| Docs | extension-integration, bridge-integration, SECURITY, CONTRIBUTING, four research dossiers |
-| Theme | Mocha (Catppuccin dark), Latte (Catppuccin light), Mica composition, R4-N8 high-contrast (open) |
+Start with **R5-N1** unless a real Claude Code OAuth environment is available. R5-P0-02 is higher severity, but it is blocked on live validation that cannot be synthesized from this repository.

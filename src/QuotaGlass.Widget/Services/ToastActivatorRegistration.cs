@@ -17,7 +17,7 @@ namespace QuotaGlass.Widget.Services;
 /// 2. <c>CoRegisterClassObject</c> at runtime so the currently-running
 ///    process receives the activation instead of cold-launching a new one.
 /// </summary>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.17763.0")]
 internal static class ToastActivatorRegistration
 {
     private const uint CLSCTX_LOCAL_SERVER = 0x4;

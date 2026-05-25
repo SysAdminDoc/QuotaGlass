@@ -1,5 +1,8 @@
 using System.Buffers.Binary;
 using System.IO.Pipes;
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using QuotaGlass.Shared;
@@ -30,12 +33,19 @@ internal static class SnapshotPipeServer
             while (!ct.IsCancellationRequested)
             {
                 _server?.Dispose();
-                _server = new NamedPipeServerStream(
+                // R5-N5 / Pass 5 — restrict the pipe ACL to the current
+                // user. Default ACL allows same-user spoofing; with the
+                // explicit security descriptor below, only the SID that
+                // owns the NMH process can read the pipe.
+                _server = NamedPipeServerStreamAcl.Create(
                     SnapshotPipe.PipeName,
                     PipeDirection.Out,
                     maxNumberOfServerInstances: 1,
                     PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
+                    PipeOptions.Asynchronous,
+                    inBufferSize: 0,
+                    outBufferSize: 0,
+                    pipeSecurity: BuildCurrentUserOnlyPipeSecurity());
 
                 try
                 {
@@ -71,6 +81,19 @@ internal static class SnapshotPipeServer
         {
             Logger.Error("Snapshot pipe server crashed", ex);
         }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static PipeSecurity BuildCurrentUserOnlyPipeSecurity()
+    {
+        var security = new PipeSecurity();
+        var user = WindowsIdentity.GetCurrent().User;
+        if (user is null) return security;
+        security.AddAccessRule(new PipeAccessRule(
+            user,
+            PipeAccessRights.FullControl,
+            AccessControlType.Allow));
+        return security;
     }
 
     public static async Task BroadcastAsync(SnapshotMessage message)

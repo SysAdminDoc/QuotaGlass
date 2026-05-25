@@ -20,36 +20,10 @@
         Top="40">
 
     <Window.Resources>
+        <!-- v0.9 R5-N3 — HitButton style moved into Theme/Controls.xaml so
+             extracted UserControls (SetupCard / Calendar / Log) resolve it
+             via the app-level merged dictionary. -->
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-
-        <Style x:Key="HitButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="6,2" />
-            <Setter Property="Foreground" Value="{StaticResource Brush.Card.MutedText}" />
-            <Setter Property="FontFamily" Value="{StaticResource Font.Default}" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bg"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Brush.Accent.Soft}" />
-                                <Setter Property="Foreground" Value="{StaticResource Brush.Card.HeaderText}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Border Style="{StaticResource WindowChromeBorder}"
@@ -85,41 +59,8 @@
                 </StackPanel>
             </Grid>
 
-            <!--  Setup checklist (F-N3) — visible only when something is unmet  -->
-            <Border Grid.Row="1"
-                    Style="{StaticResource CardBorder}"
-                    Visibility="{Binding Setup.IsVisible, Converter={StaticResource BoolToVisibility}}"
-                    Margin="0,0,0,8">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource HeaderText}" Text="Setup" />
-                    <TextBlock Style="{StaticResource SubText}"
-                               Margin="0,6,0,2"
-                               Text="{Binding Setup.ExtensionStepLabel}" />
-                    <TextBlock Style="{StaticResource SubText}"
-                               Margin="0,0,0,2"
-                               Text="{Binding Setup.NmhStepLabel}" />
-                    <TextBlock Style="{StaticResource SubText}"
-                               Margin="0,0,0,6"
-                               Text="{Binding Setup.SnapshotStepLabel}" />
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Install extension"
-                                Style="{StaticResource HitButton}"
-                                Tag="{Binding Setup.ExtensionInstallUrl}"
-                                Click="OnOpenUrlFromTag" />
-                        <Button Content="Run --register"
-                                Style="{StaticResource HitButton}"
-                                Click="OnRunRegisterClicked" />
-                        <Button Content="Help"
-                                Style="{StaticResource HitButton}"
-                                Tag="{Binding Setup.TroubleshootingUrl}"
-                                Click="OnOpenUrlFromTag" />
-                        <Button Content="Dismiss 24h"
-                                Style="{StaticResource HitButton}"
-                                Click="OnDismissSetup"
-                                ToolTip="Hide the setup card for 24 hours." />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+            <!-- F-N3 Setup checklist — extracted to UserControl in v0.9. -->
+            <v:SetupCardView Grid.Row="1" DataContext="{Binding Setup}" />
 
             <!--  Bucket cards  -->
             <ItemsControl Grid.Row="2" ItemsSource="{Binding Buckets}">
@@ -128,7 +69,7 @@
                         <Border Style="{StaticResource CardBorder}"
                                 Cursor="Hand"
                                 Focusable="True"
-                                IsTabStop="True"
+                                KeyboardNavigation.IsTabStop="True"
                                 MouseLeftButtonUp="OnCardClicked"
                                 MouseRightButtonUp="OnCardRightClicked"
                                 KeyDown="OnCardKeyDown"

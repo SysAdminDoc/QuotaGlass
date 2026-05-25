@@ -1,7 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <!--
+        v0.9 bumped to net9.0-windows10.0.19041.0 so the test project
+        can ProjectReference QuotaGlass.Widget for cross-assembly tests
+        (e.g. SnapshotWatcher.Merge). CI runners (`windows-latest`)
+        ship WPF, so this builds cleanly.
+    -->
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
@@ -21,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\QuotaGlass.Shared\QuotaGlass.Shared.csproj" />
     <ProjectReference Include="..\..\src\QuotaGlass.NMH\QuotaGlass.NMH.csproj" />
+    <ProjectReference Include="..\..\src\QuotaGlass.Widget\QuotaGlass.Widget.csproj" />
   </ItemGroup>
 
 </Project>

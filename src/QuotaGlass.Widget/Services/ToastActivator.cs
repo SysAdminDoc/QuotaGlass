@@ -45,7 +45,7 @@ public sealed class ToastActivator : INotificationActivationCallback
         {
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher is null) return;
-            dispatcher.BeginInvoke(() => HandleAction(invokedArgs));
+            _ = dispatcher.BeginInvoke(() => HandleAction(invokedArgs));
         }
         catch (Exception ex)
         {

@@ -30,4 +30,11 @@
     <ProjectReference Include="..\QuotaGlass.Shared\QuotaGlass.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- v0.9 — expose internals to the test project so cross-assembly tests
+         (e.g. SnapshotWatcher.Merge) can verify behavior without widening
+         the public surface. -->
+    <InternalsVisibleTo Include="QuotaGlass.Tests" />
+  </ItemGroup>
+
 </Project>

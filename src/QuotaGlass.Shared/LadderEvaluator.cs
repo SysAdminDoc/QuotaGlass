@@ -31,7 +31,7 @@ public static class LadderEvaluator
         foreach (var lead in sorted)
         {
             var fireAt = resetAt - lead;
-            if (now < fireAt) break;
+            if (now < fireAt) continue;
             if (hasFired(lead)) continue;
             fireLead = lead;
             break;
@@ -44,7 +44,7 @@ public static class LadderEvaluator
         {
             if (staleLead <= fireLead.Value) continue;
             var staleFireAt = resetAt - staleLead;
-            if (now < staleFireAt) break;
+            if (now < staleFireAt) continue;
             if (!hasFired(staleLead)) suppress.Add(staleLead);
         }
 

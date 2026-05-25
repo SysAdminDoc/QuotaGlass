@@ -4,6 +4,7 @@ using System.Windows.Media;
 // WPF types only — disambiguate after UseWindowsForms pulled System.Drawing in.
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
 using Pen = System.Windows.Media.Pen;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
@@ -185,11 +186,12 @@ public sealed class RadialRing : FrameworkElement
             var tickColor = sweepBrush is SolidColorBrush scb
                 ? Color.FromArgb(160, scb.Color.R, scb.Color.G, scb.Color.B)
                 : Color.FromArgb(160, 230, 230, 230);
-            using var tickPen = new Pen(new SolidColorBrush(tickColor), Math.Max(1, stroke / 2))
+            var tickPen = new Pen(new SolidColorBrush(tickColor), Math.Max(1, stroke / 2))
             {
                 StartLineCap = PenLineCap.Round,
                 EndLineCap = PenLineCap.Round,
             };
+            tickPen.Freeze();
             var angle = -90 + (pace / 100.0 * 360.0);
             var inner = PointOnCircle(center, radius - stroke / 2, angle);
             var outer = PointOnCircle(center, radius + stroke / 2, angle);

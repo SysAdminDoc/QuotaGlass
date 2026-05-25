@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.8.0 just shipped.
+Nothing yet — v0.9.0 just shipped.
+
+## [0.9.0] — 2026-05-25
+
+Pass 5 audit + fast-follow fixes. Three Pass 5 P0 findings landed plus the test project bumped to cross-assembly testing, SetupCard extracted to UserControl, named-pipe ACL hardened. Verified with .NET SDK 9.0.314: 87 tests passing.
+
+### Added
+
+- **RESEARCH_PASS_5.md** — post-v0.8 audit dossier. Three P0 bugs surfaced (diagnostics zip incomplete, HitButton style scope, OAuth refresh endpoint unverified) plus 6 v0.9/v0.10 items.
+- **SetupCardView UserControl** — third extraction from MainWindow.xaml in the v0.8→v0.9 refactor. Install / Run-register / Help / Dismiss-24h buttons now live with the panel. ([Views/SetupCardView.xaml](src/QuotaGlass.Widget/Views/SetupCardView.xaml))
+- **SnapshotWatcher.Merge unit tests** — 5 new method-level facts lock the multi-source merge contract (R4-P1-02): newest envelope wins, OK provider wins on tie, fallback when primary failed. ([test/QuotaGlass.Tests/SnapshotWatcherMergeTests.cs](test/QuotaGlass.Tests/SnapshotWatcherMergeTests.cs))
+
+### Fixed
+
+- **R5-P0-01** — `Diagnostics.Collect` now includes `snapshot.local-creds.json` (redacted the same way as `snapshot.json`). Pass 5 Bug 1: the v0.5 F-N1 sibling file was silently omitted from issue-report bundles.
+- **R5-P0-03 / R5-N3** — `HitButton` style moved from `MainWindow.xaml.Resources` into `Theme/Controls.xaml` so the v0.8 / v0.9 extracted UserControls (Calendar, Log, Setup) resolve it via the app-level merged dictionary instead of inheriting from `Window.Resources`.
+- **R5-N5** — Named-pipe ACL locked to the current user via `NamedPipeServerStreamAcl.Create` + `PipeSecurity`. Defends against same-user-process snapshot spoofing.
+- **R3-P0-01 regression** — `LadderEvaluator` now continues past not-yet-due smaller tiers instead of stopping at the `0` tier. Cold start at T-5m again fires the 5m tier and suppresses stale larger tiers.
+- **Build hygiene** — WPF code-behind now disambiguates WPF types from WinForms implicit usings, dispatcher fire-and-forget calls are explicit, and the test project has a global `System.IO` using.
+
+### Changed
+
+- Test project TFM bumped from `net9.0-windows` to `net9.0-windows10.0.19041.0` + `<UseWPF>true</UseWPF>` so it can ProjectReference QuotaGlass.Widget for cross-assembly tests. CI runs on `windows-latest`; WPF resolves cleanly there.
+- `QuotaGlass.Widget.csproj` gains `<InternalsVisibleTo Include="QuotaGlass.Tests" />` so `SnapshotWatcher.Merge` (and future internals) can be tested without widening the public surface.
+- `ROADMAP.md` is now pending-only again. Completed v0.5.0 through v0.9.0 work lives in this changelog; blocked live-validation tasks are separated from executable next work.
+
+### Carried into v0.10+
+
+- **R5-P0-02 / R5-N6** — Verify Claude Code OAuth refresh endpoint. Lab work; **needs live validation** on a real Claude Code install.
+- **R5-N1** — XAML → `Strings.Get` migration (proof-of-concept on one button first).
+- **R5-N2** — AlarmScheduler dedup unit tests (needs `IToastService` / `IFiredRulesStore` interface extraction).
+- **R5-P1-03** — Rename CLSID near-collision (toast activator `…D2A2` vs Inno AppId `…D2A1`).
+- **MainWindow.xaml.cs split** — TrayWiring / UpdateCheck / BucketContextMenu helper classes.
 
 ## [0.8.0] — 2026-05-25
 
