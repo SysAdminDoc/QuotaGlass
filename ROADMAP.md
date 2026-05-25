@@ -1,114 +1,167 @@
-# Roadmap
+# Roadmap — single source of truth
 
-**Last updated:** 2026-05-24 · **Current shipped version:** none yet (pre-v0.1.0)
+**Last updated:** 2026-05-25 · **Current:** v0.1.0-dev (commit `b9061b7` + research dossiers).
 
-This roadmap is a working document, not a wishlist. Each Now / Next / Later item ties back to a finding in [docs/research.md](docs/research.md). Under-Consideration entries are tracked but not committed. Rejected entries record decisions so they don't get silently re-litigated.
+This file is the **executable** TODO. It merges the original three planning files. Background and evidence still live in:
+
+- [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) — Pass 1 audit (positioning, schemas, F-A*/F-N*).
+- [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) — Pass 2 audit (R2-P0-*, R2-P1-*, Pass 1 corrections).
+- [docs/research.md](docs/research.md) — original scaffold dossier (sections corrected by Pass 2).
+
+Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
+
+- **Updater:** self-hosted GitHub-Releases + PowerShell self-replace (Zrnik pattern), not Velopack. Matches "small + auditable" ethos.
+- **Toast actions** (Snooze/Open): v0.2; v0.1 ships text+sound only.
+- **OS minimum:** Win10 1809 (build 17763); revisit at v0.3.
+- **AppUserModelID:** `com.sysadmindoc.QuotaGlass.Widget`.
+- **AI-Usage_Tracker manifest `"key"`:** add now; one-time-only break for pre-release extension users (very small population).
+- **Installer post-install:** auto-launch widget; show first-run "QuotaGlass is in your tray" toast.
+- **Code signing:** unsigned for v0.1.x; SmartScreen workaround noted in README.
 
 ---
 
 ## Shipped
 
-> Nothing yet.
+- [x] v0.1.0-dev scaffold (`b9061b7`) — three-project .NET 9 solution, NMH binary, WPF widget skeleton, MIT, branch protection, MEMORY.md index entry.
+- [x] `docs/research.md` — original landscape research (Pass 2 correction applied below).
+- [x] [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) — Pass 1 deep audit.
+- [x] [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) — Pass 2 deep audit.
 
 ---
 
-## Now — v0.1.0 — "Foundation: bridge + widget MVP"
+## Phase 0 — Unblock v0.1.0 (must land before any release)
 
-The goal is end-to-end: extension → NMH → snapshot.json → widget renders → toast fires at reset. Polish lives in v0.2.
+### Batch 1 — Quick-win corrections
 
-### Bridge
+- [ ] **F-A3** — Firefox extension ID typo: `aiusagetracker@sysadmindoc` → `ai-usage-tracker@sysadmindoc.dev` in `HostRegistrar.cs:24`.
+- [ ] **F-A7** — Title-bar `×` hides instead of quits. `App.xaml` `ShutdownMode="OnExplicitShutdown"`; `MainWindow.OnCloseClick` → `Hide()`.
+- [ ] **F-A18** — Atomic write `fsync` before rename in `AtomicJsonFile.Write`.
+- [ ] **F-A20** — Replace README "Install" placeholder.
+- [ ] **F-A21** — Correct `docs/research.md` §5 (Windows competitors exist).
+- [ ] **F-A17** — `BucketViewModel.TickCountdown` only raise INPC when formatted string changed.
 
-- [ ] **N-01 — Native messaging host (`QuotaGlass.NMH`)**. .NET 9 console exe. stdin/stdout 4-byte LE length-prefix framing per [Chrome's protocol](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging). Origin validation against the allowed extension ID. JSON decode into `BucketSnapshot`.
-- [ ] **N-02 — Snapshot persistence**. Atomic write to `%LOCALAPPDATA%\QuotaGlass\snapshot.json` (write to `.tmp`, `File.Move(..., overwrite: true)`). One snapshot per refresh tick; overwrite-in-place, no append.
-- [ ] **N-03 — `--register` / `--unregister` flags**. Writes the NMH JSON manifest to the install dir and a registry key at `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.sysadmindoc.quotaglass` (plus Edge + Firefox equivalents if their roots exist).
-- [ ] **N-04 — Stderr logging**. NMH cannot write to stdout (the channel is the protocol). All diagnostics to stderr + `%LOCALAPPDATA%\QuotaGlass\logs\nmh-{date}.log`.
-- [ ] **N-05 — Extension bridge module**. Add `src/lib/bridge.js` to `AI-Usage_Tracker`, add `"nativeMessaging"` permission to `manifests/chrome.json` + `firefox.json`. On each successful refresh, forward latest snapshot. Userscript bundle skips this module entirely.
+### Batch 2 — Schema + integration contract
 
-### Widget
+- [ ] **F-N9** — Author `docs/extension-integration.md` schema spec (canonical contract).
+- [ ] **F-A1** — Rewrite `BucketSnapshot.cs` to mirror extension's actual `state` envelope (`fetchedAtISO`, `providers.{claude,codex}.{ok,source,orgId,plan,buckets[]}`, `bucket.{id,kind,model,label,percentUsed,resetISO,rawResetText}`).
+- [ ] **F-A5** — Reconcile buckets by `Bucket.Id` not `Provider/Label` (rolls in with F-A1).
+- [ ] **F-A12** — Schema versioning + migration scaffold (`Shared/SchemaVersion.cs`).
+- [ ] **F-A13** — NMH ack payload includes `nmhVersion`, `schemaMin`, `schemaMax`, `serverTime`.
+- [ ] **R2-P1-02** — JSON `MaxDepth = 16` on `SnapshotJsonContext`; per-field length checks.
+- [ ] **F-A14** — Origin allow-list enforcement in `MessagePump`.
 
-- [ ] **N-06 — WPF window shell (`QuotaGlass.Widget`)**. Borderless `Window`, `WindowStyle=None`, `AllowsTransparency=True`, `Topmost=True`. Draggable via `MouseLeftButtonDown` → `DragMove()`. Position persisted to `settings.json`.
-- [ ] **N-07 — Catppuccin Mocha theme**. ResourceDictionary with the 26 named colors. All backdrops use 4–12 px `CornerRadius`. No `Capsule`-style shapes anywhere.
-- [ ] **N-08 — Radial-ring countdown control**. Custom UserControl: `Path` with `ArcSegment`, sweep angle bound to `Percent`. Color ramp green (< 60 %) → amber (60–85 %) → red (> 85 %). HH:MM:SS center text bound to `TimeUntilReset`.
-- [ ] **N-09 — Per-provider card layout**. One card per `BucketSnapshot`. Header = provider + label ("Claude — 5 h window", "Codex — weekly"), body = ring, footer = "Resets in 4 h 12 m".
-- [ ] **N-10 — FileSystemWatcher on snapshot.json**. Debounced 250 ms; on change → reload + raise `INotifyPropertyChanged` on the bucket VM.
-- [ ] **N-11 — Empty / stale / error states**. First-run: "Waiting for first snapshot from extension…" + install-link. Stale: ring greyed, "Last fetched 47 m ago". Error: red header bar, NMH connection state.
+### Batch 3 — Toast + TopMost (alarm UX foundation)
 
-### Notifications
+- [ ] **R2-P0-01** — Drop `Microsoft.Toolkit.Uwp.Notifications` package; remove transitive `System.Drawing.Common 4.7.0` (GHSA-rxg9-xrhp-64gj). Write `Services/ToastService.cs` on raw `Windows.UI.Notifications`.
+- [ ] **R2-P0-02** — `Services/TopMostEnforcer.cs` with WinEvent `EVENT_SYSTEM_FOREGROUND` hook on dedicated STA thread.
+- [ ] **R2-P0-03** — Custom audio via `System.Media.SoundPlayer.Play()` + `<audio silent="true"/>` in toast XML. **Authoritative finding: `<audio src="file:///">` is silently ignored.**
+- [ ] **N-12** — Toast notification adapter (rolls in with R2-P0-01).
+- [ ] **N-13** — Alarm-ladder scheduler (24/12/6/3/1h, 30/15/5m, at-reset; configurable; fire-once idempotency `<provider>-<bucket>-<tier>-<resetISO>`).
+- [ ] **N-14** — Zero-state R3 toast (bucket flips to `percentUsed >= 100`).
 
-- [ ] **N-12 — Toast notification adapter**. Wrap `Microsoft.Toolkit.Uwp.Notifications.ToastContentBuilder`. Test with default Windows sound first; custom-audio in v0.2.
-- [ ] **N-13 — Alarm-ladder scheduler**. `System.Threading.Timer` per tier per bucket. Tiers configurable: default 24 h / 12 h / 6 h / 3 h / 1 h / 30 m / 15 m / 5 m / at-reset. Fire-once idempotency keys: `<provider>-<bucket>-<tier>-<resetISO>`.
-- [ ] **N-14 — Zero-state toast**. Special "R3" tier — fires when `percent >= 100` for any bucket, suppressed if `R3-<bucket>-<resetISO>` already fired. Sound: distinct from regular tiers.
+### Batch 4 — Widget polish
 
-### Settings
+- [ ] **F-N8** — `--inject-fake-snapshot` dev mode (writes deterministic snapshot.json for solo widget dev).
+- [ ] **F-N6** — Click bucket card → open analytics page in default browser via `Process.Start(url) { UseShellExecute = true }`.
+- [ ] **F-A9** — Stale-snapshot visual state (greyed ring + colored status when `now - ts > 2× refresh interval`).
+- [ ] **F-A19** — Catppuccin contrast fix: `Brush.Card.MutedText` from `Overlay1 #7F849C` → `Overlay0 #6C7086` for WCAG AA.
+- [ ] **R2-P1-03** — Pace footer (`BucketViewModel.PaceLabel` derived from snapshot history).
 
-- [ ] **N-15 — Embedded settings panel**. Expand-down panel inside the widget (NOT a separate window). Refresh interval, alarm ladder toggles, theme, custom sound picker (deferred audio playback until v0.2).
-- [ ] **N-16 — Settings persistence**. `%LOCALAPPDATA%\QuotaGlass\settings.json` with same atomic-write pattern.
+### Batch 5 — Tray + first-run
 
-### Distribution
-
-- [ ] **N-17 — Inno Setup installer**. Single `QuotaGlass-Setup-vX.Y.Z.exe` that installs to `%LOCALAPPDATA%\Programs\QuotaGlass\`, runs `QuotaGlass.NMH.exe --register`, drops Start Menu shortcut, autostarts widget on login (optional checkbox).
-- [ ] **N-18 — GitHub Release workflow**. `.github/workflows/release.yml`, `workflow_dispatch` only, builds + signs + uploads `Setup.exe` to the matching `vX.Y.Z` tag.
-
-### Docs
-
-- [ ] **N-19 — README "Install" section**. Real install steps, not placeholder.
-- [ ] **N-20 — README screenshots**. Widget on dark wallpaper, toast in action, settings panel. DPI-aware capture per global screenshots rule.
-- [ ] **N-21 — `docs/extension-integration.md`**. Specifies the snapshot payload schema the extension sends; canonical for future provider plugins.
-
----
-
-## Next — v0.2.0 — "Polish + custom audio + tray"
-
-Adds the features that take the widget from "MVP that works" to "actually pleasant to use all day."
-
-- [ ] **NX-01 — Custom-sound picker fully wired**. OpenFileDialog → copy to `%LOCALAPPDATA%\QuotaGlass\sounds\<sha1>.<ext>` → reference via `file:///` in toast XML. Per-tier sound override.
-- [ ] **NX-02 — System tray icon**. `NotifyIcon` (WinForms interop), right-click menu: Show / Hide widget, Refresh, Snooze 1 h, Open settings, Quit.
-- [ ] **NX-03 — Snooze**. Suppress all toasts for a user-picked window. Snooze state persisted to `settings.json` so it survives a restart.
-- [ ] **NX-04 — Edge-snap on drag**. Snap to top/bottom/left/right of the active monitor when dragged within 16 px. Catppuccin shadow drops to indicate snap zones.
-- [ ] **NX-05 — Multi-monitor placement memory**. Per-monitor position state so DisplayPort renegotiation doesn't put the widget off-screen.
-- [ ] **NX-06 — Catppuccin Latte light variant**. Theme switcher in settings + `prefers-color-scheme`-aware default.
-- [ ] **NX-07 — Reduced-motion mode**. Respect `SystemParameters.MinimumAnimationFps` and the "Reduce motion" accessibility setting. Disables ring transitions + shimmer.
-- [ ] **NX-08 — Sparkline panel**. 24-h mini history under each ring. Data from `snapshot.json` history array (extension already maintains 30 days).
-- [ ] **NX-09 — Tooltip on ring hover**. Exact percent + timestamp + "X messages remaining" if extension provides the count.
-- [ ] **NX-10 — Embedded log panel**. Collapse-down panel under settings; tail of `logs/widget-{date}.log` + NMH connection state.
+- [ ] **F-N4** — System tray icon with right-click menu (Show/Hide/Refresh/Quit). `H.NotifyIcon.Wpf` package.
+- [ ] **F-N3** — Setup Checklist card in widget when snapshot is missing/stale > 24h: 3 steps (extension installed, NMH registered, first snapshot received).
 
 ---
 
-## Later — v0.3+ — "Resilience + alarm power"
+## Phase 1 — v0.1.0 ship
 
-- [ ] **L-01 — Per-tier alarm sound + per-tier message**. Each ladder tier independently configurable: sound file, toast title template, action buttons.
-- [ ] **L-02 — Calendar-style "next 7 days" view**. Expand widget into a card showing every upcoming Claude weekly + Codex 5 h reset over the next week.
-- [ ] **L-03 — Win11 widget board integration**. Investigate the Windows 11 Widgets API (currently RSS/Web-Widget-API based, not great for custom .NET surfaces). May not be feasible without a UWP wrapper.
-- [ ] **L-04 — Action Center deep-link**. Toast action buttons that open `claude.ai/settings/usage` or `chatgpt.com/codex/cloud/settings/analytics#usage`.
-- [ ] **L-05 — Direct API fallback (Anthropic Admin / OpenAI Usage)**. User pastes an API key in settings; NMH polls those endpoints in addition to consuming the extension feed, so the widget keeps refreshing when Chrome is closed.
-- [ ] **L-06 — Named pipe between NMH and Widget**. Currently they share via `snapshot.json` + FileSystemWatcher (~250 ms latency). Pipe drops it to < 10 ms and removes the disk roundtrip.
-- [ ] **L-07 — Plan auto-detection (Maciek pattern)**. Detect Pro / Max5 / Max20 / Team / Enterprise from observed reset cadences. Surface as a badge on the card header.
-- [ ] **L-08 — Burn-rate pace marker on ring**. Lighter tick on the ring showing projected end-of-window utilization (linear extrapolation from extension's existing burn-rate forecast).
-- [ ] **L-09 — Anomaly / spike detection**. Toast when a single sample jumps > 2σ above moving average — the "single prompt jumped me from 21 % to 100 %" pain pattern.
-- [ ] **L-10 — Provider plugin contract**. Each provider becomes a snapshot-source plugin (extension-fed, API-key-fed, JSONL-file-fed). Opens the door to NX-01..NX-06 in the extension's roadmap.
+### Batch 6 — Settings
+
+- [ ] **N-15** — Embedded settings panel (expand-down, not separate window).
+- [ ] **N-16** — Settings persistence at `%LOCALAPPDATA%\QuotaGlass\settings.json` (atomic write).
+
+### Batch 7 — Cross-repo bridge
+
+- [ ] **F-A2** — Add `"key"` field to `AI-Usage_Tracker/manifests/chrome.json`; hardcode resulting Chrome ID in `HostRegistrar.ChromeExtensionIds`.
+- [ ] **F-A4** — Write `AI-Usage_Tracker/src/lib/bridge.js` with persistent port, reconnect-on-disconnect, 25s ping. Add `"nativeMessaging"` to both manifests. Wire from `background.js` after `mergeSnapshot`.
+
+### Batch 8 — Distribution
+
+- [ ] **F-N10** — Add `win-arm64` to `RuntimeIdentifiers` in both csprojs.
+- [ ] **R2-P1-08** — Register Start Menu shortcut with `System.AppUserModel.ID = com.sysadmindoc.QuotaGlass.Widget`. Use same AppId in `ToastNotificationManager.CreateToastNotifier`.
+- [ ] **R2-P1-06** — Self-hosted updater (`Services/UpdateChecker.cs`) — GitHub Releases API + PowerShell self-replace script (Zrnik pattern).
+- [ ] **N-17** — Inno Setup installer (`installer/quotaglass.iss`) that installs to `%LOCALAPPDATA%\Programs\QuotaGlass\`, runs `--register`, drops Start Menu shortcut with AUMID, autostarts widget on login, supports x64+arm64.
+- [ ] **N-18** — GitHub Release workflow (`.github/workflows/release.yml`, `workflow_dispatch`, multi-arch build + sign-skip + Inno pack + GH release upload).
+
+### Batch 9 — Logging + observability
+
+- [ ] **F-A10** — Log rotation: delete `nmh-{date}.log` older than 14 days; size-cap individual files at 10 MB.
+- [ ] **R-Rec-02** — `--purge` NMH flag wipes `%LOCALAPPDATA%\QuotaGlass\*`.
+- [ ] **R-Log-03** — `Services/WidgetLogger.cs` mirroring NMH logger pattern; daily file rotation.
+- [ ] **R-Log-02** — 4-char correlation ID per inbound NMH frame; propagate into snapshot.json `lastRequestId`.
+
+### Batch 10 — Tests + final docs
+
+- [ ] **F-A16** — `test/QuotaGlass.Tests/` xUnit project. 8 initial tests covering AtomicJsonFile, MessagePump framing, BucketViewModel countdown, RadialRing math, HostRegistrar manifest, JSON MaxDepth, origin enforcement, schema versioning.
+- [ ] **N-19** — Real README install steps.
+- [ ] **N-20** — Hero + popup + toast screenshots in `assets/screenshots/`, DPI-aware capture.
 
 ---
 
-## Under Consideration — signals tracked, not committed
+## Phase 2 — v0.2.0 polish + true differentiator
 
-- **UC-01 — Avalonia port for Linux + macOS**. Requested by exactly nobody so far. The NMH is already portable; only the widget would need a port. Revisit if there's actual demand.
-- **UC-02 — WinUI 3 / .NET MAUI port**. WinUI 3 gives Mica/Acrylic backdrops natively but the framework is still rough on extension/embedding scenarios. WPF + custom theme is more predictable in 2026.
-- **UC-03 — Embed a browser cookie reader as fallback when NMH disconnects**. Only worth doing if direct-API (L-05) doesn't fully cover the disconnected-browser case.
-- **UC-04 — Telemetry opt-in (Sentry / OpenTelemetry)**. README promises no telemetry. Adding even opt-in changes the privacy story. Park.
-- **UC-05 — Companion mobile app (Android Material 3)**. Out of scope; would need a server to push extension snapshots to the phone, breaking the "nothing leaves your machine" promise.
+- [ ] **F-N1** — Direct credential reading (`%USERPROFILE%\.claude\.credentials.json`, `.codex\auth.json`, `.hermes\auth.json`). NMH `--poll-credentials` mode; settings.json gates.
+- [ ] **R2-P1-05** — Hermes credential source (folds into F-N1).
+- [ ] **F-N5** — Mica / Acrylic backdrop on Win11 22621+ via `DwmSetWindowAttribute`.
+- [ ] **NX-04** — Edge-snap on drag (within 16 px of monitor edge).
+- [ ] **NX-05** — Multi-monitor placement memory.
+- [ ] **NX-06** — Catppuccin Latte light theme.
+- [ ] **NX-07** — Reduced-motion mode (respect Windows accessibility setting).
+- [ ] **NX-08** — Sparkline panel (consume extension's existing `sparklineFor` data).
+- [ ] **NX-09** — Tooltip on ring hover.
+- [ ] **NX-10** — Embedded log panel.
+- [ ] **R2-P2-01** — Working-day Pace integration (Zrnik's `Pace.cs` pattern).
 
 ---
 
-## Rejected — decisions captured
+## Phase 3 — v0.3+
 
-- **R-01 — Rainmeter skin instead of standalone WPF**. Skin DSL is awkward for stateful logic; would still need a C# plugin for the alarm scheduler. Net cost is higher than WPF.
-- **R-02 — Tauri or Electron desktop port of the extension**. AI-Usage_Tracker roadmap UC-01 already parks this as "browser-first by philosophy." Duplicates the JS data layer in a second runtime. ~150 MB install for a 32 px badge.
-- **R-03 — Direct Chromium cookie reads as the primary data source**. Chromium changed cookie encryption mid-2024; maintenance treadmill. Acceptable as a fallback only (L-05 / UC-03).
-- **R-04 — Re-implementing the entire scraping stack in WPF**. Forces the user to log in twice (browser + widget). Embedded WebView2 chrome looks awful as a widget. Re-fights every Claude / OpenAI hydration race the extension already solved.
-- **R-05 — Pill / oval / fully-rounded backdrop UI**. Hard-banned by the global project rule on stadium shapes. No exceptions.
-- **R-06 — Paid tier**. Open-source, MIT, no freemium gate.
-- **R-07 — Confetti on reset**. Conflicts with the project's restrained design language (same as AI-Usage_Tracker R-03).
-- **R-08 — GPL / copyleft license**. MIT is fine; copyleft would complicate downstream packaging into installers.
+- [ ] **L-01** — Per-tier alarm sound + message.
+- [ ] **L-02** — 7-day "next resets" calendar view.
+- [ ] **L-04** — Action Center deep-links on toast buttons.
+- [ ] **L-06** — Named pipe between NMH and Widget (drops 250ms FileSystemWatcher latency to <10ms).
+- [ ] **L-07** — Plan auto-detection from reset cadence.
+- [ ] **L-08** — Burn-rate pace marker on ring (lighter tick).
+- [ ] **L-09** — Anomaly / spike detection.
+- [ ] **L-10** — Provider plugin contract.
+- [ ] **F-N7** — Shell-command webhook on alarm fire.
+- [ ] **L-12** — Native messaging companion to keep extension SW alive (mostly handled by F-A4 already).
+
+---
+
+## Under Consideration
+
+- **UC-01** — Avalonia port for Linux + macOS. No demand yet.
+- **UC-02** — WinUI 3 / .NET MAUI port. Less predictable than WPF for widget scenarios.
+- **L-03** — Win11 Widgets board integration. Tracked, low priority.
+
+---
+
+## Rejected (decisions captured)
+
+- **R-01** — Rainmeter skin path.
+- **R-02** — Tauri/Electron port of extension.
+- **R-03** — Chromium cookie reads as primary source.
+- **R-04** — Re-implementing scraping stack in WPF.
+- **R-05** — Pill/oval/rounded backdrops (global rule).
+- **R-06** — Paid tier.
+- **R-07** — Confetti on reset.
+- **R-08** — GPL copyleft license switch.
+- **R2-NG-01** — Jira/Toggl integrations (Zrnik direction, dilutive).
+- **R2-NG-02** — MSIX packaging (loses per-user install benefits).
+- **R2-NG-03** — Port Zrnik's CredentialStore verbatim (read for understanding, write minimal version).
+- **R2-NG-04** — Telemetry / opt-in analytics (privacy story).
 
 ---
 
@@ -116,14 +169,13 @@ Adds the features that take the widget from "MVP that works" to "actually pleasa
 
 | Category | Coverage |
 |---|---|
-| UX | N-06..N-11, NX-04..NX-09, L-02, L-08 |
-| Performance | L-06 (named pipe), N-02 (atomic write) |
-| Reliability | N-04 (stderr log), N-11 (stale state), L-05 (API fallback) |
-| Security | N-01 (origin validation), NX-01 (file-copy sandbox) |
-| Integrations | N-05 (extension bridge), L-04 (deep-links), L-05 (direct API) |
-| Accessibility | NX-07 (reduced motion), L-07 implicit (plan auto-detect = no manual entry) |
-| i18n / l10n | Out of v0.1; revisit in L-tier |
-| Observability | N-04 (stderr + log), NX-10 (embedded log panel) |
-| Distribution | N-17 (Inno installer), N-18 (release workflow) |
-| Multi-monitor | NX-05 |
-| Theme support | N-07, NX-06 |
+| UX | Batch 4, Batch 5, NX-04..NX-09, L-02, L-08 |
+| Reliability | F-A4, F-A12, F-A14, R2-P0-02, F-A9, F-A18 |
+| Security | R2-P0-01 (CVE), R2-P1-02 (JSON depth), F-A14 (origin), R-Sec-03 (URL scheme) |
+| Integrations | F-A1, F-N9, F-A2, F-A4, F-N1, L-10 |
+| Accessibility | F-A19, NX-07, UX-Acc-01..04 (Phase 2) |
+| Performance | F-A17, L-06 (named pipe) |
+| Distribution | F-N10, R2-P1-06, N-17, N-18 |
+| Testing | F-A16 |
+| Docs | F-N9, N-19, N-20, F-A20, F-A21 |
+| Theme | NX-06, F-N5 |
