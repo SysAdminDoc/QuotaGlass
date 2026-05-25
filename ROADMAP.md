@@ -31,14 +31,15 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 
 ## Phase 0 — Unblock v0.1.0 (must land before any release)
 
-### Batch 1 — Quick-win corrections
+### Batch 1 — Quick-win corrections ✅
 
-- [ ] **F-A3** — Firefox extension ID typo: `aiusagetracker@sysadmindoc` → `ai-usage-tracker@sysadmindoc.dev` in `HostRegistrar.cs:24`.
-- [ ] **F-A7** — Title-bar `×` hides instead of quits. `App.xaml` `ShutdownMode="OnExplicitShutdown"`; `MainWindow.OnCloseClick` → `Hide()`.
-- [ ] **F-A18** — Atomic write `fsync` before rename in `AtomicJsonFile.Write`.
-- [ ] **F-A20** — Replace README "Install" placeholder.
-- [ ] **F-A21** — Correct `docs/research.md` §5 (Windows competitors exist).
-- [ ] **F-A17** — `BucketViewModel.TickCountdown` only raise INPC when formatted string changed.
+- [x] **F-A3** — Firefox extension ID typo fixed.
+- [x] **F-A7** — Title-bar `×` hides instead of quits.
+- [x] **F-A18** — Atomic write fsync before rename.
+- [x] **F-A20** — README "Install" placeholder replaced with shipping-status callout.
+- [x] **F-A21** — `docs/research.md` §5 corrected (Windows competitors exist; audio doc fixed).
+- [x] **F-A17** — `BucketViewModel.TickCountdown` caches formatted string; only INPC on change.
+- [x] **F-A13** — NMH ack payload includes `nmhVersion`/`schemaMin`/`schemaMax`/`serverTime`.
 
 ### Batch 2 — Schema + integration contract
 

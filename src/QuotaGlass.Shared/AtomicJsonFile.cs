@@ -6,6 +6,8 @@ namespace QuotaGlass.Shared;
 
 public static class AtomicJsonFile
 {
+    private static readonly UTF8Encoding NoBomUtf8 = new(encoderShouldEmitUTF8Identifier: false);
+
     public static void Write<T>(string path, T value, JsonTypeInfo<T> typeInfo)
     {
         var dir = Path.GetDirectoryName(path);
@@ -16,7 +18,15 @@ public static class AtomicJsonFile
 
         var tmp = path + ".tmp";
         var json = JsonSerializer.Serialize(value, typeInfo);
-        File.WriteAllText(tmp, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        var bytes = NoBomUtf8.GetBytes(json);
+
+        // Flush to disk before the rename so a power-cut between write and
+        // rename cannot leave both files in inconsistent state.
+        using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            fs.Write(bytes, 0, bytes.Length);
+            fs.Flush(flushToDisk: true);
+        }
 
         if (File.Exists(path))
         {

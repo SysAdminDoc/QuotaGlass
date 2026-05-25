@@ -141,13 +141,24 @@ Pulled from the AI-Usage_Tracker ROADMAP appendix (sources [#1]..[#33]). Filtere
 | **[long-910/vscode-claude-status](https://github.com/long-910/vscode-claude-status)** | VSCode extension | Claude Code | Status-bar token+cost | Demonstrates editor-surface demand | Different surface (editor vs desktop) |
 | **[ryoppippi/ccusage](https://github.com/ryoppippi/ccusage)** | Node CLI | Claude Code | Reads local `~/.claude/projects/*.jsonl`; daily/monthly/5-hour blocks | Sister-project potential | CLI; complementary not competitive |
 
-**Gap QuotaGlass fills:** Every existing desktop surface is **macOS** or **terminal**. There is no Windows-native floating widget for Claude + Codex usage as of May 2026. This is the only Windows tracker that's *not* a browser extension or a CLI.
+**Gap QuotaGlass fills (revised 2026-05-25 after Pass 2 audit):** At least six Windows-native widgets exist as of May 2026 — Zrnik/claude-usage-windows-taskbar-widget, CodeZeno/Claude-Code-Usage-Monitor, jens-duttke/usage-monitor-for-claude, psinghmanager/g4-Claw-counter, SlavomirDurej/claude-usage-widget, SmartAppsCo/claude-usage-widget. **All of them read Claude Code's `~/.claude/.credentials.json` OAuth tokens.** QuotaGlass's actual differentiators are:
+
+- The only Windows widget that tracks **browser-session users** (claude.ai chat web + chatgpt.com Codex web). Competitors require Claude Code CLI usage.
+- The richest data path — three sources (`/api/organizations/{org}/usage`, Claude SSE `message_limit` interception, `anthropic-ratelimit-unified-*` headers) vs competitors' single-source API call.
+- The **alarm ladder** with 8 configurable tiers + custom audio per tier (competitors fire 2 fixed thresholds at most).
+- Catppuccin Mocha "premium glass" identity (competitors use Win11 default styling).
+
+See [../RESEARCH_PASS_2.md](../RESEARCH_PASS_2.md) §6 for the full Pass 2 competitive matrix and [../ROADMAP.md](../ROADMAP.md) Phase 2 F-N1 for the planned direct-credential reading path that closes the "browser must be open" gap.
 
 ---
 
 ## 6. Notification mechanism research
 
-### Windows toast XML with custom audio
+### Windows toast XML with custom audio (revised 2026-05-25 after Pass 2 audit)
+
+**Authoritative finding from the [official UWP toast `<audio>` schema](https://learn.microsoft.com/en-us/uwp/schemas/tiles/toastschema/element-audio):** custom file paths in `<audio src="...">` are **silently ignored** for unpackaged WPF apps. Only the enumerated `ms-winsoundevent:Notification.*` values play. The schema's remarks paragraph reads: *"If you specify a custom file path in the app payload, the default sound (notification, call, alarm, or reminder) will be played based on the specified scenario."*
+
+**Correct approach for QuotaGlass v0.1:**
 
 ```xml
 <toast>
@@ -157,17 +168,13 @@ Pulled from the AI-Usage_Tracker ROADMAP appendix (sources [#1]..[#33]). Filtere
       <text>Current usage: 87 % of weekly window</text>
     </binding>
   </visual>
-  <audio src="ms-appx:///Sounds/reset.wav" loop="false"/>
-  <actions>
-    <action content="Open dashboard" arguments="action=open-dashboard"/>
-    <action content="Snooze 30 m" arguments="action=snooze&amp;mins=30"/>
-  </actions>
+  <audio silent="true"/>
 </toast>
 ```
 
-- `audio src=` accepts `ms-appx:///` (packaged), `ms-appdata:///local/...` (per-user `%LOCALAPPDATA%`), or `file:///` (absolute path).
-- For unpackaged WPF apps using `Microsoft.Toolkit.Uwp.Notifications`, **`file:///` is the only reliable scheme**. The toast handler resolves the path before raising the notification.
-- The toast appears in Action Center even if dismissed, so missed alarms aren't lost.
+Then play the user's chosen WAV via `System.Media.SoundPlayer.Play()` from the alarm scheduler immediately before `ToastNotificationManager.CreateToastNotifier(...).Show(toast)`. For MP3/M4A support, pull in `NAudio` later.
+
+Toast actions (`<actions>` element with `<action>` buttons) are deferred to v0.2 — they require either the (archived) `Microsoft.Toolkit.Uwp.Notifications` package for activation handling or a hand-rolled COM activator. See [../ROADMAP.md](../ROADMAP.md) Phase 3 L-04 for the deep-link action plan.
 
 ### Fire-once idempotency
 

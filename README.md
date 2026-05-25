@@ -58,13 +58,19 @@ QuotaGlass is the **desktop companion** to the [AI-Usage_Tracker](https://github
 
 ## Install
 
-> **v0.1.0 has not shipped yet.** This section will be filled in once the first installer is published. See [ROADMAP.md](ROADMAP.md) for status.
+> **Status: pre-release.** No installer is published yet. The instructions below describe the v0.1.0 path; see [ROADMAP.md](ROADMAP.md) Phase 1 Batch 8 for shipping status. Build-from-source works today (see next section).
 
-1. Install the [AI-Usage_Tracker extension](https://github.com/SysAdminDoc/AI-Usage_Tracker) (Chrome / Edge / Brave / Firefox).
+When v0.1.0 ships:
+
+1. Install the [AI-Usage_Tracker extension](https://github.com/SysAdminDoc/AI-Usage_Tracker) (Chrome / Edge / Brave / Firefox). The extension version that adds native-messaging support will be ≥ 0.2.0.
 2. Download `QuotaGlass-Setup-vX.Y.Z.exe` from the [Releases page](https://github.com/SysAdminDoc/QuotaGlass/releases/latest).
-3. Run the installer — it places the binaries in `%LOCALAPPDATA%\Programs\QuotaGlass\` and registers the native messaging host under `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.sysadmindoc.quotaglass`.
+3. Run the installer. Windows SmartScreen will prompt because v0.1.x binaries are unsigned — click **More info** → **Run anyway**. The installer:
+   - Places the binaries in `%LOCALAPPDATA%\Programs\QuotaGlass\`.
+   - Runs `QuotaGlass.NMH.exe --register` (writes HKCU keys for Chrome, Edge, Chromium, Firefox under `Software\*\NativeMessagingHosts\com.sysadmindoc.quotaglass`).
+   - Drops a Start Menu shortcut with `System.AppUserModel.ID = com.sysadmindoc.QuotaGlass.Widget` (required for toast grouping in Action Center).
+   - Adds an HKCU `Run` entry to autostart the widget on login (toggleable in Settings).
 4. Reload the AI-Usage_Tracker extension in `chrome://extensions/`.
-5. Right-click the QuotaGlass tray icon → **Show widget**.
+5. The widget launches automatically and pops a "QuotaGlass is in your tray" toast. Right-click the tray icon → **Show widget**.
 
 ## Build from source
 

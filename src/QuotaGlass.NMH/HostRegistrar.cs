@@ -26,9 +26,10 @@ internal static class HostRegistrar
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     };
 
+    // Source of truth: AI-Usage_Tracker/manifests/firefox.json -> browser_specific_settings.gecko.id
     private static readonly string[] FirefoxExtensionIds =
     {
-        "aiusagetracker@sysadmindoc",
+        "ai-usage-tracker@sysadmindoc.dev",
     };
 
     public static int Register()

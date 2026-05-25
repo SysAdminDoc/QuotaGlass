@@ -7,6 +7,7 @@ namespace QuotaGlass.Widget.ViewModels;
 public sealed class BucketViewModel : INotifyPropertyChanged
 {
     private Bucket _model = new();
+    private string? _cachedTimeUntilResetLabel;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -60,6 +61,7 @@ public sealed class BucketViewModel : INotifyPropertyChanged
     public void Apply(Bucket bucket)
     {
         _model = bucket;
+        _cachedTimeUntilResetLabel = null;
         Raise(nameof(Provider));
         Raise(nameof(Label));
         Raise(nameof(Plan));
@@ -72,6 +74,11 @@ public sealed class BucketViewModel : INotifyPropertyChanged
 
     public void TickCountdown()
     {
+        // Avoid 1 Hz INPC storm when the formatted string ("3h 5m") changes
+        // only once per minute. Recompute, compare, raise only on change.
+        var next = TimeUntilResetLabel;
+        if (next == _cachedTimeUntilResetLabel) return;
+        _cachedTimeUntilResetLabel = next;
         Raise(nameof(TimeUntilResetLabel));
     }
 

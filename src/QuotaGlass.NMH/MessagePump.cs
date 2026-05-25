@@ -105,7 +105,13 @@ internal sealed class MessagePump
 
     private static async Task WriteAckAsync(Stream stdout, bool ok, string detail)
     {
-        var json = $"{{\"ok\":{(ok ? "true" : "false")},\"detail\":\"{detail}\"}}";
+        var version = HostMetadata.Version;
+        var ts = DateTimeOffset.UtcNow.ToString("O");
+        // Forward-compat handshake — extension can read these to decide whether
+        // to upgrade its payload shape. Schema range is the NMH-supported span.
+        var json = $"{{\"ok\":{(ok ? "true" : "false")},\"detail\":\"{detail}\","
+                 + $"\"nmhVersion\":\"{version}\",\"schemaMin\":{HostMetadata.SchemaMin},"
+                 + $"\"schemaMax\":{HostMetadata.SchemaMax},\"serverTime\":\"{ts}\"}}";
         var bytes = Encoding.UTF8.GetBytes(json);
         var header = new byte[4];
         BinaryPrimitives.WriteInt32LittleEndian(header, bytes.Length);

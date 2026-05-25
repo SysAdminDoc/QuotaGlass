@@ -32,6 +32,9 @@ public partial class MainWindow : Window
 
     private void OnCloseClick(object sender, RoutedEventArgs e)
     {
-        Close();
+        // The widget hides instead of quitting. The tray icon (or relaunching
+        // the executable) brings it back. Use File -> Quit (settings panel) or
+        // the tray menu's Quit entry to actually terminate the process.
+        Hide();
     }
 }
