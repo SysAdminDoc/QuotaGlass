@@ -223,20 +223,33 @@
                                   Margin="0,0,0,6"
                                   ToolTip="Suppresses alarm toasts while Focus Assist, fullscreen apps, or presentation mode are active. Suppressed tiers are marked fired so they don't replay later."
                                   IsChecked="{Binding Settings.RespectFocusAssist}" />
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Style="{StaticResource SubText}"
                                        VerticalAlignment="Center"
+                                       Margin="0,0,10,0"
                                        Text="Theme:" />
                             <RadioButton Content="Mocha (dark)"
                                          Foreground="{StaticResource Brush.Card.BodyText}"
-                                         Margin="10,0,10,0"
+                                         Margin="0,0,10,0"
                                          GroupName="QGTheme"
                                          IsChecked="{Binding Settings.IsDarkTheme, Mode=TwoWay}" />
                             <RadioButton Content="Latte (light)"
                                          Foreground="{StaticResource Brush.Card.BodyText}"
+                                         Margin="0,0,10,0"
                                          GroupName="QGTheme"
                                          IsChecked="{Binding Settings.IsLightTheme, Mode=TwoWay}" />
-                        </StackPanel>
+                            <RadioButton Content="High contrast"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         Margin="0,0,10,0"
+                                         GroupName="QGTheme"
+                                         ToolTip="Binds every brush to Windows SystemColors so the active HC scheme drives every pixel."
+                                         IsChecked="{Binding Settings.IsHighContrastTheme, Mode=TwoWay}" />
+                            <RadioButton Content="Follow system"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         GroupName="QGTheme"
+                                         ToolTip="Picks Mocha / Latte / High contrast at launch based on Windows accessibility + apps-use-light-theme preference."
+                                         IsChecked="{Binding Settings.IsSystemTheme, Mode=TwoWay}" />
+                        </WrapPanel>
                         <TextBlock Style="{StaticResource SubText}"
                                    Text="Reset ladder (uncheck to suppress a tier):"
                                    Margin="0,6,0,2" />

@@ -160,7 +160,8 @@ The extension's scrapers emit these stable `id` values. The QuotaGlass widget MU
 
 ## Schema versioning policy
 
-- Current: `2` (v0.6+). NMH supports `[1, 2]` (see `HostMetadata.SchemaMin/Max`).
+- Current: `3` (v0.7+). NMH supports `[1, 3]` (see `HostMetadata.SchemaMin/Max`).
+- v3 (R4-N5 / R3-P2-01) adds optional `state.providers.claudeAccounts` + `state.providers.codexAccounts` arrays for users with multiple accounts per provider. The primary account stays at `state.providers.claude` / `state.providers.codex`; additional accounts list themselves under the new arrays. Older consumers ignore the new fields and see only the primary account.
 - v2 (R4-N3) adds optional `state.history`:
   ```jsonc
   "state": {

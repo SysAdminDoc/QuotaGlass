@@ -139,6 +139,12 @@ internal sealed class MessagePump
             var claudeCount = message.State.Providers.Claude?.Buckets?.Count ?? 0;
             var codexCount = message.State.Providers.Codex?.Buckets?.Count ?? 0;
             Logger.Info($"persisted snapshot — claude={claudeCount} codex={codexCount} caller={_callerOrigin}");
+
+            // L-06 / R4-N6 — best-effort pipe broadcast. Cuts widget-to-render
+            // latency from the 250 ms FileSystemWatcher floor to <10 ms. No-op
+            // when no widget is connected.
+            _ = SnapshotPipeServer.BroadcastAsync(message);
+
             await WriteAckAsync(stdout, ok: true, "ok", kind: null).ConfigureAwait(false);
         }
         catch (Exception ex)

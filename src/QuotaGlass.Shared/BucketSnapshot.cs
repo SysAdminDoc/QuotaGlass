@@ -64,6 +64,20 @@ public sealed class ProviderMap
 
     [JsonPropertyName("codex")]
     public ProviderSnapshot? Codex { get; set; }
+
+    /// <summary>
+    /// Schema v3 (R4-N5 / R3-P2-01) — multi-account support. When a user has
+    /// two or more Claude accounts (e.g. personal + work), the extension
+    /// emits one <see cref="ProviderSnapshot"/> per account here. Older
+    /// receivers (schema v1/v2) ignore the field and just see the primary
+    /// account via <see cref="Claude"/>.
+    /// </summary>
+    [JsonPropertyName("claudeAccounts")]
+    public List<ProviderSnapshot>? ClaudeAccounts { get; set; }
+
+    /// <summary>Schema v3 — same as <see cref="ClaudeAccounts"/> but for Codex.</summary>
+    [JsonPropertyName("codexAccounts")]
+    public List<ProviderSnapshot>? CodexAccounts { get; set; }
 }
 
 /// <summary>

@@ -18,6 +18,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private static readonly TimeSpan VeryStaleAfter = TimeSpan.FromMinutes(30);
 
     private readonly SnapshotWatcher _watcher;
+    private readonly SnapshotPipeClient _pipe;
     private readonly DispatcherTimer _countdownTimer;
     private readonly AlarmScheduler? _alarms;
     private readonly PaceCalculator _pace = new();
@@ -90,6 +91,15 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _watcher.SnapshotChanged += (_, m) => _alarms?.OnSnapshot(m);
         _watcher.SnapshotChanged += (_, _) => Setup.Refresh();
         _watcher.StatusChanged += (_, s) => StatusText = s;
+        // L-06 / R4-N6 — pipe consumer feeds the same handlers as the
+        // FileSystemWatcher path. When the NMH publishes via pipe the
+        // widget renders within ~10 ms instead of waiting on the 250 ms
+        // debounce; if the pipe disconnects, the watcher still catches
+        // the snapshot.json write.
+        _pipe = new SnapshotPipeClient(dispatcher);
+        _pipe.SnapshotReceived += OnSnapshot;
+        _pipe.SnapshotReceived += (_, m) => _alarms?.OnSnapshot(m);
+        _pipe.SnapshotReceived += (_, _) => Setup.Refresh();
         _alarms = alarms;
 
         if (_alarms is not null)
@@ -178,6 +188,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         Setup.Start();
         _watcher.Start();
+        _pipe.Start();
         _countdownTimer.Start();
         _alarms?.Start();
     }
@@ -203,9 +214,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         // Walk providers in a stable order so cards don't reshuffle on each
         // refresh. Within a provider, preserve the extension's bucket order.
+        // R4-N5 / Schema v3: multi-account expansion — primary first, then
+        // any additional accounts. The bucket-id reconciler in the next
+        // section keys on Bucket.Id which itself must already encode the
+        // account when the extension produces multi-account snapshots.
         var incoming = new List<(string Key, Bucket Bucket, string? Account)>();
         AppendProvider(incoming, "claude", state.Providers.Claude);
+        if (state.Providers.ClaudeAccounts is { } claudeAccts)
+        {
+            foreach (var p in claudeAccts) AppendProvider(incoming, "claude", p);
+        }
         AppendProvider(incoming, "codex", state.Providers.Codex);
+        if (state.Providers.CodexAccounts is { } codexAccts)
+        {
+            foreach (var p in codexAccts) AppendProvider(incoming, "codex", p);
+        }
 
         // Reconcile by Bucket.Id (F-A5). Stable across label / kind changes.
         var existingById = Buckets.ToDictionary(KeyOf, vm => vm);
@@ -295,6 +318,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _alarms?.Stop();
         _countdownTimer.Stop();
         _watcher.Dispose();
+        _pipe.Dispose();
     }
 
     private void Raise([CallerMemberName] string? prop = null)

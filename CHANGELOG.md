@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.6.0 just shipped.
+Nothing yet — v0.7.0 just shipped.
+
+## [0.7.0] — 2026-05-25
+
+Multi-account + accessibility + low-latency transport release. Closes the remaining bigger Pass 4 carry-forward items (R4-N5 / R4-N8 / R4-N6 / R4-N9) plus the v0.6 deferred multi-account columns.
+
+### Added
+
+- **R4-N5 / R3-P2-01 full** — Multi-account columns. Schema bumped to v3; `ProviderMap` gains optional `ClaudeAccounts` + `CodexAccounts` arrays. `MainViewModel.OnSnapshot` expands each provider's primary + secondary accounts into per-account bucket sets, all rendered via the existing card flow (`BucketViewModel.AccountLabel` from v0.4 already disambiguates them in the hover tooltip). Older receivers still see the primary account through the unchanged `Claude` / `Codex` fields. ([Shared/BucketSnapshot.cs](src/QuotaGlass.Shared/BucketSnapshot.cs), [Shared/SchemaVersion.cs](src/QuotaGlass.Shared/SchemaVersion.cs), [ViewModels/MainViewModel.cs](src/QuotaGlass.Widget/ViewModels/MainViewModel.cs), [docs/extension-integration.md](docs/extension-integration.md))
+- **R4-N8** — Windows High Contrast theme + "Follow system" mode. New [Theme/HighContrast.xaml](src/QuotaGlass.Widget/Theme/HighContrast.xaml) binds every brush to `DynamicResource SystemColors.*Key` so the active HC scheme drives every pixel. `ThemeService.ResolveTheme("system")` queries `SystemParameters.HighContrast` and the `HKCU\…\Personalize\AppsUseLightTheme` registry value to pick Mocha / Latte / HighContrast at launch. Settings panel exposes four radio buttons (Mocha / Latte / High contrast / Follow system). ([Services/ThemeService.cs](src/QuotaGlass.Widget/Services/ThemeService.cs))
+- **L-06 / R4-N6** — Named-pipe NMH↔Widget transport. NMH now publishes every persisted snapshot to `\\.\pipe\QuotaGlass.Snapshot` in 4-byte-LE-prefixed JSON; widget's `SnapshotPipeClient` consumes them on a background thread and marshals to the dispatcher. Cuts snapshot→render latency from the 250 ms FileSystemWatcher floor to <10 ms. Pipe failures gracefully fall back to the watcher path. ([Shared/SnapshotPipe.cs](src/QuotaGlass.Shared/SnapshotPipe.cs), [NMH/SnapshotPipeServer.cs](src/QuotaGlass.NMH/SnapshotPipeServer.cs), [Services/SnapshotPipeClient.cs](src/QuotaGlass.Widget/Services/SnapshotPipeClient.cs))
+- **R4-N9** — Localization scaffold. New [Resources/Strings.cs](src/QuotaGlass.Widget/Resources/Strings.cs) hosts every English UI literal keyed for future RESX swapping. `Strings.SetUiCulture` exposes the entry point future versions wire to a settings field. No user-visible change in v0.7 — strings still resolve from the default dictionary — but consumers can migrate one widget at a time.
+
+### Changed
+
+- Schema v3 ([Shared/SchemaVersion.cs](src/QuotaGlass.Shared/SchemaVersion.cs)) — `Current` = `Max` = 3, `Min` stays 1. All additions are additive so v1/v2 senders work unchanged.
+- `ThemeService.Apply` recognizes the `HighContrast` dictionary in its swap loop.
+
+### Carried into v0.8+
+
+- Architecture refactor (MainWindow.xaml UserControl extraction + settings sub-sections) — substantial XAML refactor; defer until CI has been green across several releases.
+- L-10 provider plugin contract — still no real second-provider use case.
+- N-20 manual screenshots — still needs a runtime.
 
 ## [0.6.0] — 2026-05-25
 

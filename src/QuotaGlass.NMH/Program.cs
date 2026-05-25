@@ -32,6 +32,12 @@ if (args.Length > 0)
 var callerOrigin = args.Length > 0 ? args[0] : "(no-origin)";
 Logger.Info($"NMH started, caller={callerOrigin}, pid={Environment.ProcessId}");
 
+// L-06 / R4-N6 — start the pipe server alongside the stdin pump so any
+// running widget consumer gets low-latency snapshots. Cancel on process
+// exit. Best-effort; pipe failures don't abort the NMH.
+using var pipeCts = new CancellationTokenSource();
+var pipeTask = SnapshotPipeServer.StartAsync(pipeCts.Token);
+
 try
 {
     var pump = new MessagePump(callerOrigin);
@@ -41,6 +47,11 @@ catch (Exception ex)
 {
     Logger.Error("Fatal in MessagePump", ex);
     return 2;
+}
+finally
+{
+    pipeCts.Cancel();
+    try { await pipeTask.ConfigureAwait(false); } catch { /* best-effort */ }
 }
 
 static async Task<int> RunCredentialPollerAsync(string[] args)

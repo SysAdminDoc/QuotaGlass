@@ -48,15 +48,20 @@ Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
 
 ---
 
-## Phase 6 — v0.7.0+
+## Phase 6 — v0.7.0 ✅ (2026-05-25)
 
-- [ ] **P2 — R4-N5 / R3-P2-01 full** — Multi-account columns within a provider.
+Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
+
+- [x] **R4-N5 / R3-P2-01 full** — Multi-account columns. Schema v3 adds `ClaudeAccounts` / `CodexAccounts`. MainViewModel expands every account into cards.
+- [x] **R4-N6 / L-06** — Named-pipe `\\.\pipe\QuotaGlass.Snapshot` transport. Cuts snapshot→render latency from 250 ms to <10 ms; falls back to FileSystemWatcher when no listener.
+- [x] **R4-N8** — High-contrast theme (`Theme/HighContrast.xaml` bound to `SystemColors.*Key`) + "Follow system" mode (reads `SystemParameters.HighContrast` + AppsUseLightTheme registry).
+- [x] **R4-N9** — `Strings.cs` localization scaffold; English keys + `SetUiCulture` API ready for future RESX satellite assemblies.
+
+### Carried into v0.8+
+
 - [ ] **P2 — Architecture refactor** — Extract `Views/SetupCard.xaml`, `SettingsPanel.xaml`, `CalendarPanel.xaml`, `LogPanel.xaml` as `UserControl`s.
 - [ ] **P2 — Settings panel sub-sections** — Group 14+ controls into expandable "Alarms" / "Display" / "Integration" / "Advanced".
-- [ ] **P2 — R4-N6 / L-06** — Named-pipe NMH↔Widget transport (`\\.\pipe\QuotaGlass.Snapshot`). Drops snapshot→render latency from ~270 ms to <10 ms; falls back to FileSystemWatcher when no listener.
-- [ ] **P2 — R4-N8** — High-contrast theme + "Follow system theme" mode.
-  - Touches: new `Theme/HighContrast.xaml`, [Services/ThemeService.cs](src/QuotaGlass.Widget/Services/ThemeService.cs).
-- [ ] **P3 — R4-N9 / R3-P3-01** — Localization scaffold (`Resources.resx` + `CurrentUICulture`).
+- [ ] **P3 — RESX satellite assemblies** — actually migrate XAML literals to `{x:Static res:Strings.AppTitle}` bindings once v0.7 stabilizes.
 - [ ] **P3 — L-10** — Provider plugin contract (deferred until a real second-provider use case lands).
 - [ ] **P3 — N-20** — Manual screenshots for `assets/screenshots/`. Needs an actual runtime to capture.
 - [ ] **P3 — L-03 / UC-01 / UC-02** — Win11 Widgets board integration / Avalonia port / WinUI 3 port — under-consideration; no demand yet.

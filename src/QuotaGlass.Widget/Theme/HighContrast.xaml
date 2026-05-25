@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        R4-N8 — Windows High Contrast theme. Mirrors the keys in
+        CatppuccinMocha.xaml / CatppuccinLatte.xaml but binds to the
+        DynamicResource SystemColors so the theme tracks whichever HC
+        scheme (Black, White, Black-1, White-2) the user has selected
+        in Settings → Accessibility.
+
+        Hard rule: every brush below is a SystemColor-binding so HC
+        contrast guarantees apply to every glyph.
+    -->
+
+    <!-- Palette (not used directly when HC; only kept so the keys exist). -->
+    <Color x:Key="Mocha.Rosewater">#FFFFFF</Color>
+    <Color x:Key="Mocha.Flamingo">#FFFFFF</Color>
+    <Color x:Key="Mocha.Pink">#FFFFFF</Color>
+    <Color x:Key="Mocha.Mauve">#FFFFFF</Color>
+    <Color x:Key="Mocha.Red">#FF0000</Color>
+    <Color x:Key="Mocha.Maroon">#FF0000</Color>
+    <Color x:Key="Mocha.Peach">#FFFF00</Color>
+    <Color x:Key="Mocha.Yellow">#FFFF00</Color>
+    <Color x:Key="Mocha.Green">#00FF00</Color>
+    <Color x:Key="Mocha.Teal">#00FFFF</Color>
+    <Color x:Key="Mocha.Sky">#00FFFF</Color>
+    <Color x:Key="Mocha.Sapphire">#00FFFF</Color>
+    <Color x:Key="Mocha.Blue">#0000FF</Color>
+    <Color x:Key="Mocha.Lavender">#FFFFFF</Color>
+    <Color x:Key="Mocha.Text">#FFFFFF</Color>
+    <Color x:Key="Mocha.Subtext1">#FFFFFF</Color>
+    <Color x:Key="Mocha.Subtext0">#FFFFFF</Color>
+    <Color x:Key="Mocha.Overlay2">#FFFFFF</Color>
+    <Color x:Key="Mocha.Overlay1">#FFFFFF</Color>
+    <Color x:Key="Mocha.Overlay0">#FFFFFF</Color>
+    <Color x:Key="Mocha.Surface2">#000000</Color>
+    <Color x:Key="Mocha.Surface1">#000000</Color>
+    <Color x:Key="Mocha.Surface0">#000000</Color>
+    <Color x:Key="Mocha.Base">#000000</Color>
+    <Color x:Key="Mocha.Mantle">#000000</Color>
+    <Color x:Key="Mocha.Crust">#000000</Color>
+
+    <!--
+        Brushes bound to SystemColors via DynamicResource so the active
+        HC scheme drives every pixel. Opacity is 1.0 (no glass) because
+        HC users need full contrast.
+    -->
+    <SolidColorBrush x:Key="Brush.Window.Background"
+                     Color="{DynamicResource {x:Static SystemColors.WindowColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Window.MicaBackground"
+                     Color="{DynamicResource {x:Static SystemColors.WindowColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Window.Border"
+                     Color="{DynamicResource {x:Static SystemColors.WindowFrameColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.Background"
+                     Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.Border"
+                     Color="{DynamicResource {x:Static SystemColors.ControlDarkColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.HeaderText"
+                     Color="{DynamicResource {x:Static SystemColors.ControlTextColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.BodyText"
+                     Color="{DynamicResource {x:Static SystemColors.ControlTextColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.SubtleText"
+                     Color="{DynamicResource {x:Static SystemColors.GrayTextColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Card.MutedText"
+                     Color="{DynamicResource {x:Static SystemColors.GrayTextColorKey}}" />
+
+    <SolidColorBrush x:Key="Brush.Ring.Track"
+                     Color="{DynamicResource {x:Static SystemColors.ControlDarkColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Ring.Safe"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Ring.Warn"
+                     Color="{DynamicResource {x:Static SystemColors.HotTrackColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Ring.Danger"
+                     Color="{DynamicResource {x:Static SystemColors.ActiveBorderColorKey}}" />
+
+    <SolidColorBrush x:Key="Brush.Accent"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" />
+    <SolidColorBrush x:Key="Brush.Accent.Soft"
+                     Color="{DynamicResource {x:Static SystemColors.HighlightColorKey}}" Opacity="0.2" />
+
+    <FontFamily x:Key="Font.Default">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas</FontFamily>
+
+</ResourceDictionary>

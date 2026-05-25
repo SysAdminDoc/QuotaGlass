@@ -85,8 +85,20 @@ public sealed class SettingsPanelViewModel : INotifyPropertyChanged
 
     public bool IsDarkTheme
     {
-        get => !IsLightTheme;
+        get => string.Equals(Theme, ThemeService.ThemeMocha, StringComparison.OrdinalIgnoreCase);
         set { if (value) Theme = ThemeService.ThemeMocha; }
+    }
+
+    public bool IsHighContrastTheme
+    {
+        get => string.Equals(Theme, ThemeService.ThemeHighContrast, StringComparison.OrdinalIgnoreCase);
+        set { if (value) Theme = ThemeService.ThemeHighContrast; }
+    }
+
+    public bool IsSystemTheme
+    {
+        get => string.Equals(Theme, ThemeService.ThemeSystem, StringComparison.OrdinalIgnoreCase);
+        set { if (value) Theme = ThemeService.ThemeSystem; }
     }
 
     public bool Autostart
