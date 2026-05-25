@@ -196,6 +196,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (state.Providers.Claude is { } cp) cp.Plan = PlanInference.Infer(cp);
         if (state.Providers.Codex is { } xp) xp.Plan = PlanInference.Infer(xp);
 
+        // R4-N3 — Schema v2 envelopes may carry pre-populated per-bucket
+        // history. Merge into HistoryStore before the bucket loop so the
+        // sparkline + pace marker see it on the first snapshot post-install.
+        if (state.History is not null) _history.MergeIncoming(state.History);
+
         // Walk providers in a stable order so cards don't reshuffle on each
         // refresh. Within a provider, preserve the extension's bucket order.
         var incoming = new List<(string Key, Bucket Bucket, string? Account)>();

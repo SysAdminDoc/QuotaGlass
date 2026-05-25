@@ -30,25 +30,29 @@ Surfaced by [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md). All P0/P1 items + 9 quick 
 
 ---
 
-## Phase 5 — v0.6.0 — Toast actions + schema v2 + UX refactor
+## Phase 5 — v0.6.0 — Toast actions + schema v2 + tests ✅ (2026-05-25)
 
-- [ ] **P1 — R4-N2 / L-04** — Toast actions ("Snooze 1h" / "Open analytics") via hand-rolled COM activator (no `Microsoft.Toolkit.Uwp.Notifications` re-add — preserves the CVE win).
-  - Touches: new `Services/ToastActivator.cs`, [installer/quotaglass.iss](installer/quotaglass.iss) CLSID registration, [Services/ToastService.cs](src/QuotaGlass.Widget/Services/ToastService.cs) actions XML.
-- [ ] **P1 — R4-N3** — Schema v2: bundle `state.history` in the wire envelope. Bump `SchemaVersion.Max = 2`. Widget merges incoming history into HistoryStore. Cross-repo coordination with AI-Usage_Tracker.
-  - Touches: [Shared/BucketSnapshot.cs](src/QuotaGlass.Shared/BucketSnapshot.cs), [Shared/SchemaVersion.cs](src/QuotaGlass.Shared/SchemaVersion.cs), [MessagePump](src/QuotaGlass.NMH/MessagePump.cs), [docs/extension-integration.md](docs/extension-integration.md), [docs/bridge-integration.md](docs/bridge-integration.md).
-- [ ] **P2 — R4-N5 / R3-P2-01 full** — Multi-account columns within a provider. Render side-by-side columns when multiple `ProviderSnapshot` rows share a provider name. Big UI change.
-  - Touches: [Shared/BucketSnapshot.cs](src/QuotaGlass.Shared/BucketSnapshot.cs) (or schema v3), [MainViewModel.cs](src/QuotaGlass.Widget/ViewModels/MainViewModel.cs), [Views/MainWindow.xaml](src/QuotaGlass.Widget/Views/MainWindow.xaml).
-- [ ] **P2 — Architecture refactor** — Extract `Views/SetupCard.xaml`, `SettingsPanel.xaml`, `CalendarPanel.xaml`, `LogPanel.xaml` as `UserControl`s; MainWindow.xaml shrinks to ~60 lines of composition.
-- [ ] **P2 — Settings panel sub-sections** — Group 14 controls into expandable "Alarms" / "Display" / "Integration" / "Advanced".
-- [ ] **P2 — R4-N7** — Toast XML escape unit tests (`ToastService.Escape`). Add `[InternalsVisibleTo("QuotaGlass.Tests")]` to the Widget csproj.
-  - Touches: [Services/ToastService.cs](src/QuotaGlass.Widget/Services/ToastService.cs), new `test/QuotaGlass.Tests/ToastServiceEscapeTests.cs`.
-- [ ] **P2 — HistoryStore + FiredRulesStore unit tests** — ring buffer cap, dedupe-by-ts, prune-after-14-days idempotency.
-- [ ] **P2 — Diagnostics.Collect unit test** — zip contains the expected entry names and redactions.
+Shipped this session. See [CHANGELOG.md](CHANGELOG.md) for per-item details.
+
+- [x] **R4-N2 / L-04** — Toast actions via hand-rolled COM activator. ([Services/ToastActivator.cs](src/QuotaGlass.Widget/Services/ToastActivator.cs), [installer/quotaglass.iss](installer/quotaglass.iss))
+- [x] **R4-N3** — Schema v2 bundles `state.history` in the wire envelope.
+- [x] **R4-N7** — `XmlEscape` extracted to Shared + 6 unit tests covering all 5 XML entities.
+- [x] **HistoryStore + FiredRulesStore** moved into Shared + 10 unit tests (cap, dedupe, prune).
+- [x] **Diagnostics.Collect** zip integration test (redacts orgId/accountId/WAV paths).
+
+### Carried into v0.7
+
+- [ ] **R4-N5 / R3-P2-01 full** — Multi-account columns full UI (needs real data first).
+- [ ] **Architecture refactor** — MainWindow.xaml UserControl extraction (defer until CI has a chance to validate every PR).
+- [ ] **Settings panel sub-sections** — Alarms / Display / Integration / Advanced.
 
 ---
 
 ## Phase 6 — v0.7.0+
 
+- [ ] **P2 — R4-N5 / R3-P2-01 full** — Multi-account columns within a provider.
+- [ ] **P2 — Architecture refactor** — Extract `Views/SetupCard.xaml`, `SettingsPanel.xaml`, `CalendarPanel.xaml`, `LogPanel.xaml` as `UserControl`s.
+- [ ] **P2 — Settings panel sub-sections** — Group 14+ controls into expandable "Alarms" / "Display" / "Integration" / "Advanced".
 - [ ] **P2 — R4-N6 / L-06** — Named-pipe NMH↔Widget transport (`\\.\pipe\QuotaGlass.Snapshot`). Drops snapshot→render latency from ~270 ms to <10 ms; falls back to FileSystemWatcher when no listener.
 - [ ] **P2 — R4-N8** — High-contrast theme + "Follow system theme" mode.
   - Touches: new `Theme/HighContrast.xaml`, [Services/ThemeService.cs](src/QuotaGlass.Widget/Services/ThemeService.cs).

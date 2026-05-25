@@ -7,7 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet — v0.5.0 just shipped.
+Nothing yet — v0.6.0 just shipped.
+
+## [0.6.0] — 2026-05-25
+
+Toast actions + schema v2. Closes [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md)'s v0.6 batch (R4-N2 / R4-N3 / R4-N7) plus the carry-forward test coverage gaps. Snooze and Open Analytics buttons now appear inside every bucket toast; sparklines render on fresh installs because the extension can bundle 24-sample history in the snapshot envelope.
+
+### Added
+
+- **L-04 / R4-N2** — Toast actions ("Snooze 1h" and "Open analytics") via hand-rolled COM activator. New [Services/ToastActivator.cs](src/QuotaGlass.Widget/Services/ToastActivator.cs) implements `INotificationActivationCallback` so Action Center routes button clicks back to the running widget process. Installer registers the activator CLSID (`{4F1B3F6E-2D8C-4E83-9C12-9B0B17F8D2A2}`) at `HKCU\Software\Classes\CLSID\…` and binds it to the Start Menu shortcut via `AppUserModelToastActivatorCLSID`. `App.OnStartup` also calls `CoRegisterClassObject` at runtime so the live process receives activations. **No `Microsoft.Toolkit.Uwp.Notifications` re-add** — preserves the v0.1.1 CVE win. ([Services/ToastActivatorRegistration.cs](src/QuotaGlass.Widget/Services/ToastActivatorRegistration.cs), [installer/quotaglass.iss](installer/quotaglass.iss))
+- **R4-N3** — Wire schema bumped to v2 (`SchemaVersion.Max = 2`). Adds optional `state.history: { bucketId: [{ts, percentUsed}, …] }`. Widget merges incoming samples into `HistoryStore` via the new `MergeIncoming` method so sparklines + pace markers render on the first snapshot post-install instead of after 24 polls. v1 producers still work — the field is additive. ([Shared/SchemaVersion.cs](src/QuotaGlass.Shared/SchemaVersion.cs), [Shared/BucketSnapshot.cs](src/QuotaGlass.Shared/BucketSnapshot.cs), [docs/extension-integration.md](docs/extension-integration.md))
+- **AlarmScheduler.BuildActions** — Every bucket-specific toast (R1/R2/R3/U1/U2/U3) carries Snooze 1h + Open Analytics buttons. Argument string format: `action=snooze;bucket=<id>;duration=PT1H` / `action=open;url=https://…`.
+
+### Refactored — moved into Shared so tests can reach them
+
+- **`QuotaGlass.Shared.HistoryStore`** (was `QuotaGlass.Widget.Services.HistoryStore`). Pure persistence on top of `AtomicJsonFile`; no WPF deps.
+- **`QuotaGlass.Shared.FiredRulesStore`** (was `QuotaGlass.Widget.Services.FiredRulesStore`). Same — pure persistence.
+- **`QuotaGlass.Shared.XmlEscape`** — extracted from `ToastService` so the safety-critical escape logic can be unit-tested without going through WinRT.
+
+### Added — tests
+
+- **6 new `HistoryStoreTests`** — ring-buffer cap, dedupe-by-ts, Flush-after-pending behavior, `MergeIncoming` union, unknown-bucket safety, cross-instance persistence.
+- **4 new `FiredRulesStoreTests`** — MarkFired/HasFired round-trip, idempotency, cross-instance persistence, 14-day prune on load.
+- **6 new `XmlEscapeTests`** — all five XML 1.0 entities, multibyte passthrough, idempotency note, mixed-content one-pass.
+- **1 new `DiagnosticsTests`** — `Diagnostics.Collect` zip contains the four expected entries + orgId/accountId/WAV-path redaction verified.
+
+### Changed
+
+- `Diagnostics` class is now `public` so the unit test can invoke `Collect()` directly.
+
+### Carry-forward / deferred to v0.7
+
+- Settings panel sub-sections + MainWindow.xaml UserControl extraction — substantial XAML refactors; defer until we have CI-verified builds on each PR.
+- Multi-account columns full version (R3-P2-01) — needs real multi-account data.
+- High-contrast theme + Follow-system-theme.
+- Named-pipe NMH↔Widget transport (L-06).
+- Localization scaffold.
 
 ## [0.5.0] — 2026-05-25
 

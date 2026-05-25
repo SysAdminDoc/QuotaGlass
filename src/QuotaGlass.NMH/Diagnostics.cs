@@ -18,7 +18,7 @@ namespace QuotaGlass.NMH;
 ///     last 12 chars only (preserves diagnostic value: extension + filename
 ///     hint, no full path leak).
 /// </summary>
-internal static class Diagnostics
+public static class Diagnostics
 {
     public static int Collect()
     {

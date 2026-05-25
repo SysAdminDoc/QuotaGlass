@@ -160,7 +160,22 @@ The extension's scrapers emit these stable `id` values. The QuotaGlass widget MU
 
 ## Schema versioning policy
 
-- Current: `1`. NMH supports `[1, 1]` (see `HostMetadata.SchemaMin/Max`).
+- Current: `2` (v0.6+). NMH supports `[1, 2]` (see `HostMetadata.SchemaMin/Max`).
+- v2 (R4-N3) adds optional `state.history`:
+  ```jsonc
+  "state": {
+    "providers": { /* unchanged */ },
+    "history": {
+      "claude-session":    [{ "ts": "...", "percentUsed": 12.3 }, ...],
+      "claude-weekly-all": [...],
+      "codex-5h-all":      [...]
+    }
+  }
+  ```
+  Up to ~24 samples per bucket. The widget merges them into its local
+  `HistoryStore` so sparklines / pace markers render on a fresh install
+  without waiting hours to accumulate samples. v1 consumers ignore the
+  field; the snapshot still validates against the v1 contract.
 - New fields are added as optional; consumers ignore unknown fields.
 - Breaking changes bump `schemaMax`. NMH announces support range in every ack.
 - When the extension's `schemaVersion` is below `NMH.schemaMin`, extension should either upgrade or NMH rejects with `"schema-too-old"`.

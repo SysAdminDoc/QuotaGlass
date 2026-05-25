@@ -1,22 +1,22 @@
 using System.IO;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using QuotaGlass.Shared;
 
-namespace QuotaGlass.Widget.Services;
+namespace QuotaGlass.Shared;
 
 /// <summary>
 /// Persists fire-once idempotency keys so the same notification never
 /// re-fires inside a reset window — even across widget restarts. Stored at
-/// <see cref="AppPaths.SettingsFile"/> (alongside other settings) so a
-/// purge clears everything in one shot.
+/// <c>%LOCALAPPDATA%\QuotaGlass\fired-rules.json</c> so a purge clears
+/// everything in one shot.
 ///
-/// Keys older than 14 days are pruned on load.
+/// Keys older than <see cref="RetainDays"/> are pruned on load.
+///
+/// v0.6 — moved from Widget/Services into Shared so the unit tests can
+/// exercise the prune + idempotency behavior without pulling WPF in.
 /// </summary>
 public sealed class FiredRulesStore
 {
-    private const int RetainDays = 14;
+    public const int RetainDays = 14;
 
     private readonly object _gate = new();
     private readonly string _path;
@@ -60,9 +60,6 @@ public sealed class FiredRulesStore
 
     private void Save()
     {
-        // Best-effort — an AV scan or transient share lock on the JSON file
-        // must not crash the alarm scheduler. The next successful Save will
-        // catch up to the same state because _state is in-memory authoritative.
         try
         {
             AtomicJsonFile.Write(_path, _state, FiredRulesJsonContext.Default.FiredRulesState);

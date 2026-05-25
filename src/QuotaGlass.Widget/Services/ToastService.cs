@@ -38,7 +38,8 @@ public sealed class ToastService
     /// <param name="body">Second text line. Optional.</param>
     /// <param name="customWavPath">Absolute path to a WAV. If non-null, played alongside the silent toast.</param>
     /// <param name="tag">Stable tag — used for de-dup in Action Center. Same tag replaces in place.</param>
-    public void Show(string title, string? body = null, string? customWavPath = null, string? tag = null)
+    /// <param name="actions">L-04 / R4-N2 — optional list of action buttons. Click routes through ToastActivator.</param>
+    public void Show(string title, string? body = null, string? customWavPath = null, string? tag = null, IReadOnlyList<ToastAction>? actions = null)
     {
         var xml = new XmlDocument();
         var bodyLine = string.IsNullOrEmpty(body) ? string.Empty : $"\n          <text>{Escape(body)}</text>";
@@ -46,6 +47,7 @@ public sealed class ToastService
         var audioFragment = hasCustomAudio
             ? "\n  <audio silent=\"true\"/>"
             : string.Empty;
+        var actionsFragment = BuildActionsXml(actions);
 
         xml.LoadXml($"""
             <toast>
@@ -53,7 +55,7 @@ public sealed class ToastService
                 <binding template="ToastGeneric">
                   <text>{Escape(title)}</text>{bodyLine}
                 </binding>
-              </visual>{audioFragment}
+              </visual>{audioFragment}{actionsFragment}
             </toast>
             """);
 
@@ -142,11 +144,37 @@ public sealed class ToastService
         lock (_playerGate) _activePlayers.Remove(player);
     }
 
-    private static string Escape(string s) => s
-        .Replace("&", "&amp;")
-        .Replace("<", "&lt;")
-        .Replace(">", "&gt;")
-        .Replace("\"", "&quot;");
+    /// <summary>Builds the <c>&lt;actions&gt;</c> fragment if any actions are
+    /// supplied. Empty string when actions is null/empty — keeps the toast XML
+    /// backward-compatible with v0.5 callers.</summary>
+    private static string BuildActionsXml(IReadOnlyList<ToastAction>? actions)
+    {
+        if (actions is null || actions.Count == 0) return string.Empty;
+        var sb = new System.Text.StringBuilder();
+        sb.Append("\n  <actions>");
+        foreach (var a in actions)
+        {
+            sb.Append("\n    <action ");
+            sb.Append($"content=\"{Escape(a.Content)}\" ");
+            sb.Append($"arguments=\"{Escape(a.Arguments)}\" ");
+            sb.Append("activationType=\"foreground\"/>");
+        }
+        sb.Append("\n  </actions>");
+        return sb.ToString();
+    }
+
+    /// <summary>R4-N7 — delegates to <see cref="QuotaGlass.Shared.XmlEscape"/>
+    /// so the escape logic is unit-testable from the test project (which
+    /// doesn't reference Widget).</summary>
+    private static string Escape(string s) => QuotaGlass.Shared.XmlEscape.Escape(s);
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max];
 }
+
+/// <summary>
+/// L-04 / R4-N2 — one button on a toast. <see cref="Content"/> is the
+/// visible label; <see cref="Arguments"/> is passed to
+/// <see cref="ToastActivator.Activate"/> when the user clicks it.
+/// Convention: <c>action=&lt;name&gt;;bucket=&lt;id&gt;;duration=&lt;iso&gt;</c>.
+/// </summary>
+public sealed record ToastAction(string Content, string Arguments);

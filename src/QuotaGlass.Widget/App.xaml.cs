@@ -63,6 +63,7 @@ public partial class App : Application
         // Dev-mode hook: write a deterministic snapshot then continue normal
         // startup. Lets developers iterate on the widget without spinning up
         // the full extension → NMH chain.
+        var toastActivatorCold = false;
         foreach (var arg in e.Args)
         {
             if (string.Equals(arg, "--inject-fake-snapshot", StringComparison.OrdinalIgnoreCase))
@@ -70,7 +71,20 @@ public partial class App : Application
                 FakeSnapshotInjector.Inject();
                 WidgetLogger.Info("Injected fake snapshot for dev mode");
             }
+            else if (string.Equals(arg, "--toast-activator", StringComparison.OrdinalIgnoreCase))
+            {
+                // L-04 / R4-N2 — Windows launches us with this flag when a
+                // toast action is clicked AND no running instance has the
+                // class object registered. We let the existing single-
+                // instance Mutex handler focus the live instance if one is
+                // running; otherwise we boot normally — the activator's
+                // COM-registered factory in this new process will receive
+                // the activation call.
+                toastActivatorCold = true;
+                WidgetLogger.Info("Process started via --toast-activator");
+            }
         }
+        _ = toastActivatorCold; // reserved for future telemetry / log filtering
 
         // NX-06 — apply the persisted theme before any window comes up so
         // we don't flash a dark-themed window into a light-themed one.
@@ -82,6 +96,18 @@ public partial class App : Application
         catch
         {
             // Theme apply must never block startup.
+        }
+
+        // L-04 / R4-N2 — register the toast COM activator. Best-effort:
+        // a CoRegisterClassObject failure just means toast action buttons
+        // route back to a new process instance instead of the running one.
+        try
+        {
+            ToastActivatorRegistration.Register();
+        }
+        catch (Exception ex)
+        {
+            WidgetLogger.Warn($"Toast activator registration failed: {ex.Message}");
         }
 
         base.OnStartup(e);

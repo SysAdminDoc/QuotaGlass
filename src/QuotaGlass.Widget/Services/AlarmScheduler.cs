@@ -259,7 +259,11 @@ public sealed class AlarmScheduler
             return;
         }
 
-        _toast.Show(title, body, wav, tag: key);
+        // L-04 / R4-N2 — attach Snooze + Open Analytics action buttons.
+        // Only attach when the toast is bucket-specific (R1/R2/R3/U1/U2/U3
+        // rather than ad-hoc) so we don't add stale buttons to status pings.
+        var actions = BuildActions(providerKey, bucket);
+        _toast.Show(title, body, wav, tag: key, actions: actions);
         _fired.MarkFired(key);
 
         // F-N7 — fire-and-forget webhook with QG_* env vars. Process is
@@ -267,6 +271,26 @@ public sealed class AlarmScheduler
         // similar without writing batch files. 5-second self-kill prevents
         // a runaway command from leaking processes.
         TryRunWebhook(providerKey, bucket, tier);
+    }
+
+    private static IReadOnlyList<ToastAction>? BuildActions(string providerKey, Bucket? bucket)
+    {
+        if (bucket is null || string.IsNullOrEmpty(bucket.Id)) return null;
+        var analyticsUrl = providerKey switch
+        {
+            "claude" => "https://claude.ai/settings/usage",
+            "codex" => "https://chatgpt.com/codex/cloud/settings/analytics#usage",
+            _ => null,
+        };
+        var list = new List<ToastAction>
+        {
+            new("Snooze 1h", $"action=snooze;bucket={bucket.Id};duration=PT1H"),
+        };
+        if (!string.IsNullOrEmpty(analyticsUrl))
+        {
+            list.Add(new ToastAction("Open analytics", $"action=open;url={analyticsUrl}"));
+        }
+        return list;
     }
 
     private void TryRunWebhook(string providerKey, Bucket? bucket, string tier)

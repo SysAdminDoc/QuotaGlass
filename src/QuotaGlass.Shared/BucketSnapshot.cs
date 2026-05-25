@@ -46,6 +46,15 @@ public sealed class ExtensionState
 
     [JsonPropertyName("providers")]
     public ProviderMap Providers { get; set; } = new();
+
+    /// <summary>
+    /// Schema v2 (R4-N3) — optional per-bucket history (up to ~24 samples each).
+    /// Lets the widget render sparklines on a fresh install without waiting
+    /// hours to accumulate samples locally. Receivers running schema v1 ignore
+    /// this field; widget merges it into HistoryStore when present.
+    /// </summary>
+    [JsonPropertyName("history")]
+    public Dictionary<string, List<HistorySample>>? History { get; set; }
 }
 
 public sealed class ProviderMap
@@ -125,6 +134,8 @@ public sealed class Bucket
 [JsonSerializable(typeof(ProviderMap))]
 [JsonSerializable(typeof(ProviderSnapshot))]
 [JsonSerializable(typeof(Bucket))]
+[JsonSerializable(typeof(HistorySample))]
+[JsonSerializable(typeof(Dictionary<string, List<HistorySample>>))]
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
