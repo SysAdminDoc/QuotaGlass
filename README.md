@@ -1,6 +1,6 @@
 # QuotaGlass
 
-[![Version](https://img.shields.io/badge/version-0.1.0--dev-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6.svg)](#install)
 [![Stack](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](#build-from-source)
@@ -81,6 +81,8 @@ dotnet publish src/QuotaGlass.Widget/QuotaGlass.Widget.csproj -c Release -r win-
 dotnet publish src/QuotaGlass.NMH/QuotaGlass.NMH.csproj    -c Release -r win-x64 --self-contained false
 ```
 
+For ARM64 (Surface Pro X / Snapdragon-X laptops), swap `win-x64` → `win-arm64`.
+
 Requires .NET 9 SDK (`winget install Microsoft.DotNet.SDK.9`).
 
 To register the native messaging host against a local build:
@@ -88,6 +90,26 @@ To register the native messaging host against a local build:
 ```bash
 ./publish/QuotaGlass.NMH.exe --register
 ```
+
+To wipe local state during dev:
+
+```bash
+./publish/QuotaGlass.NMH.exe --purge
+```
+
+To exercise the widget in isolation (without the extension/NMH chain):
+
+```bash
+dotnet run --project src/QuotaGlass.Widget -- --inject-fake-snapshot
+```
+
+## Run tests
+
+```bash
+dotnet test QuotaGlass.sln -c Release
+```
+
+Covers atomic-write round-trip, schema versioning, extension-payload deserialization fidelity, JSON depth-bomb rejection, and unknown-field tolerance.
 
 ## OSS landscape & why this exists
 

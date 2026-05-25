@@ -106,11 +106,11 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 - [x] **R-Log-03** — `Services/WidgetLogger.cs` mirrors NMH logger (10 MB cap, 14-day retention, daily file); wired from `App.OnStartup`; captures `DispatcherUnhandledException`.
 - [ ] **R-Log-02** — Correlation IDs — deferred to v0.2. Current logging keys to caller-origin + bucket counts; correlation ID adds value only once we have multi-extension fan-in.
 
-### Batch 10 — Tests + final docs
+### Batch 10 — Tests + final docs ✅ (partial)
 
-- [ ] **F-A16** — `test/QuotaGlass.Tests/` xUnit project. 8 initial tests covering AtomicJsonFile, MessagePump framing, BucketViewModel countdown, RadialRing math, HostRegistrar manifest, JSON MaxDepth, origin enforcement, schema versioning.
-- [ ] **N-19** — Real README install steps.
-- [ ] **N-20** — Hero + popup + toast screenshots in `assets/screenshots/`, DPI-aware capture.
+- [x] **F-A16** — `test/QuotaGlass.Tests/` xUnit project; 11 passing tests covering AtomicJsonFile round-trip + missing/invalid file paths, schema version range, full extension-payload fidelity deserialization, MaxDepth depth-bomb rejection, unknown-field tolerance. Solution `dotnet test` green.
+- [x] **N-19** — README updated with ARM64 instructions, `--purge` flag, `--inject-fake-snapshot` dev mode, `dotnet test` instructions.
+- [ ] **N-20** — Screenshots — need an actual runtime to capture; deferred until user manually runs the widget.
 
 ---
 
