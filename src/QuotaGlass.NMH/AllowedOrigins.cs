@@ -8,9 +8,10 @@ namespace QuotaGlass.NMH;
 /// </summary>
 internal static class AllowedOrigins
 {
-    // Placeholder AI-Usage_Tracker Chrome ID. Will be replaced with the
-    // deterministic ID derived from the manifest "key" once F-A2 lands.
-    public const string AiUsageTrackerChromeId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    // Deterministic AI-Usage_Tracker Chrome ID derived from the RSA-2048
+    // public key embedded in AI-Usage_Tracker/manifests/chrome.json#key.
+    // Updating the manifest key would break this contract — don't.
+    public const string AiUsageTrackerChromeId = "olkdpcileldmdemjbiklkhompnhkhjeh";
 
     public const string AiUsageTrackerFirefoxId = "ai-usage-tracker@sysadmindoc.dev";
 
