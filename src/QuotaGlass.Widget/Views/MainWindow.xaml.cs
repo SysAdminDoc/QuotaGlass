@@ -118,6 +118,10 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnToggleSettings(object sender, RoutedEventArgs e) => _vm.Settings.Toggle();
+
+    private void OnPickWavClicked(object sender, RoutedEventArgs e) => _vm.Settings.PickWavFile();
+
     private void OnRunRegisterClicked(object sender, RoutedEventArgs e)
     {
         try

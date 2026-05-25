@@ -79,10 +79,10 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 
 ## Phase 1 — v0.1.0 ship
 
-### Batch 6 — Settings
+### Batch 6 — Settings ✅
 
-- [ ] **N-15** — Embedded settings panel (expand-down, not separate window).
-- [ ] **N-16** — Settings persistence at `%LOCALAPPDATA%\QuotaGlass\settings.json` (atomic write).
+- [x] **N-15** — Embedded settings panel inside MainWindow; expand/collapse button at bottom; CheckBoxes for alarms-enabled + autostart; TextBoxes for warn/danger %; current ladder + custom-sound path.
+- [x] **N-16** — `Services/SettingsStore.cs` persists to `%LOCALAPPDATA%\QuotaGlass\settings.json` via atomic write; source-generated JSON; `Changed` event re-applies to `AlarmScheduler` so threshold/ladder/sound edits take effect immediately. `Services/AutostartRegistration.cs` writes the HKCU\…\Run entry when Autostart toggled.
 
 ### Batch 7 — Cross-repo bridge
 

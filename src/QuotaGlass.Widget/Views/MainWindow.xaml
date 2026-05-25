@@ -63,6 +63,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!--  Title bar  -->
@@ -162,8 +163,73 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!--  Settings panel (embedded, expand-down)  -->
+            <StackPanel Grid.Row="3" Margin="0,4,0,0">
+                <Button Style="{StaticResource HitButton}"
+                        Content="{Binding Settings.ToggleGlyph}"
+                        Click="OnToggleSettings"
+                        HorizontalAlignment="Right" />
+                <Border Style="{StaticResource CardBorder}"
+                        Margin="0,4,0,0"
+                        Visibility="{Binding Settings.IsExpanded, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <CheckBox Content="Notification alarms enabled"
+                                  Foreground="{StaticResource Brush.Card.BodyText}"
+                                  Margin="0,0,0,6"
+                                  IsChecked="{Binding Settings.AlarmsEnabled}" />
+                        <CheckBox Content="Launch QuotaGlass at logon"
+                                  Foreground="{StaticResource Brush.Card.BodyText}"
+                                  Margin="0,0,0,6"
+                                  IsChecked="{Binding Settings.Autostart}" />
+                        <TextBlock Style="{StaticResource SubText}"
+                                   Text="{Binding Settings.LadderLabel, StringFormat=Reset ladder: {0}}"
+                                   Margin="0,6,0,2" />
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Style="{StaticResource SubText}"
+                                       VerticalAlignment="Center"
+                                       Text="Custom sound:" />
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource MutedText}"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,6,0"
+                                       Text="{Binding Settings.CustomWavPath}" />
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource HitButton}"
+                                    Content="Pick…"
+                                    Click="OnPickWavClicked" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubText}" Text="Warn at %" />
+                                <TextBox Text="{Binding Settings.WarnPercent, UpdateSourceTrigger=LostFocus}"
+                                         Background="{StaticResource Brush.Window.Background}"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         BorderBrush="{StaticResource Brush.Card.Border}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                <TextBlock Style="{StaticResource SubText}" Text="Danger at %" />
+                                <TextBox Text="{Binding Settings.DangerPercent, UpdateSourceTrigger=LostFocus}"
+                                         Background="{StaticResource Brush.Window.Background}"
+                                         Foreground="{StaticResource Brush.Card.BodyText}"
+                                         BorderBrush="{StaticResource Brush.Card.Border}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
             <!--  Status strip  -->
-            <TextBlock Grid.Row="3"
+            <TextBlock Grid.Row="4"
                        Style="{StaticResource MutedText}"
                        Margin="2,4,2,0"
                        Text="{Binding StatusText}" />

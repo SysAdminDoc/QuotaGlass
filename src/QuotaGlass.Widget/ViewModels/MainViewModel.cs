@@ -37,6 +37,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
     public SetupCardViewModel Setup { get; }
 
+    public SettingsPanelViewModel Settings { get; }
+
+    public SettingsStore SettingsStore { get; }
+
     public string StatusText
     {
         get => _statusText;
@@ -59,8 +63,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    public MainViewModel(Dispatcher dispatcher, AlarmScheduler? alarms = null)
+    public MainViewModel(Dispatcher dispatcher, AlarmScheduler? alarms = null, SettingsStore? settingsStore = null)
     {
+        SettingsStore = settingsStore ?? new SettingsStore();
+        Settings = new SettingsPanelViewModel(SettingsStore);
         Setup = new SetupCardViewModel(dispatcher);
 
         _watcher = new SnapshotWatcher(dispatcher);
@@ -69,6 +75,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         _watcher.SnapshotChanged += (_, _) => Setup.Refresh();
         _watcher.StatusChanged += (_, s) => StatusText = s;
         _alarms = alarms;
+
+        if (_alarms is not null)
+        {
+            ApplyAlarmSettings();
+            SettingsStore.Changed += (_, _) => ApplyAlarmSettings();
+        }
 
         _countdownTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
         {
@@ -79,6 +91,18 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             foreach (var b in Buckets) b.TickCountdown();
             UpdateStaleness();
         };
+    }
+
+    private void ApplyAlarmSettings()
+    {
+        if (_alarms is null) return;
+        var s = SettingsStore.Current.Alarms;
+        _alarms.Enabled = s.Enabled;
+        _alarms.Ladder = s.LadderMinutes.Select(m => TimeSpan.FromMinutes(m)).ToArray();
+        _alarms.UsageThresholds = s.Thresholds.ToArray();
+        _alarms.CustomWavPath = s.CustomWavPath;
+        _alarms.ResetWavPath = s.ResetWavPath;
+        _alarms.ZeroStateWavPath = s.ZeroStateWavPath;
     }
 
     private void UpdateStaleness()
