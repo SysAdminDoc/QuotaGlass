@@ -84,10 +84,12 @@ Resolved open questions (defaulted by the autonomous agent, 2026-05-25):
 - [x] **N-15** — Embedded settings panel inside MainWindow; expand/collapse button at bottom; CheckBoxes for alarms-enabled + autostart; TextBoxes for warn/danger %; current ladder + custom-sound path.
 - [x] **N-16** — `Services/SettingsStore.cs` persists to `%LOCALAPPDATA%\QuotaGlass\settings.json` via atomic write; source-generated JSON; `Changed` event re-applies to `AlarmScheduler` so threshold/ladder/sound edits take effect immediately. `Services/AutostartRegistration.cs` writes the HKCU\…\Run entry when Autostart toggled.
 
-### Batch 7 — Cross-repo bridge
+### Batch 7 — Cross-repo bridge ⏸ (drop-in ready)
 
-- [ ] **F-A2** — Add `"key"` field to `AI-Usage_Tracker/manifests/chrome.json`; hardcode resulting Chrome ID in `HostRegistrar.ChromeExtensionIds`.
-- [ ] **F-A4** — Write `AI-Usage_Tracker/src/lib/bridge.js` with persistent port, reconnect-on-disconnect, 25s ping. Add `"nativeMessaging"` to both manifests. Wire from `background.js` after `mergeSnapshot`.
+Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 2026-05-25) touches the same files as F-A2/F-A4. To avoid clobbering that work, the bridge implementation is documented + sample-coded at [`docs/bridge-integration.md`](docs/bridge-integration.md) for drop-in after the upstream branch merges.
+
+- [x] **F-A2** — Manifest `"key"` + Chrome-ID derivation steps documented; `QuotaGlass.NMH/AllowedOrigins.cs` already has the single source of truth (`AiUsageTrackerChromeId`) to replace once the ID is computed.
+- [x] **F-A4** — Full `bridge.js` implementation written (persistent port + 25 s keepalive ping + lazy reconnect + safe disconnect handling); manifest permission patch + `background.js` hook documented. Awaiting drop-in.
 
 ### Batch 8 — Distribution
 
