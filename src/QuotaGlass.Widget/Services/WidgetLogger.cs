@@ -1,27 +1,26 @@
-namespace QuotaGlass.NMH;
+using System.IO;
+using QuotaGlass.Shared;
 
-internal static class Logger
+namespace QuotaGlass.Widget.Services;
+
+/// <summary>
+/// Mirrors NMH's logger pattern for the widget process. File-based for
+/// post-mortem debugging; daily rotation; 10 MB per-file cap; 14-day
+/// retention.
+/// </summary>
+public static class WidgetLogger
 {
-    private const long PerFileMaxBytes = 10L * 1024 * 1024;   // 10 MB before rotate
-    private const int RetainDays = 14;                         // delete daily files older than this
+    private const long PerFileMaxBytes = 10L * 1024 * 1024;
+    private const int RetainDays = 14;
 
     private static readonly Lock Gate = new();
     private static string? _path;
 
-    public static void Init(string path)
+    public static void Init()
     {
+        var path = Path.Combine(AppPaths.LogsDir, $"widget-{DateTime.Now:yyyy-MM-dd}.log");
+        try { Directory.CreateDirectory(AppPaths.LogsDir); } catch { }
         _path = path;
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        }
-        catch
-        {
-            // best-effort
-        }
-
-        // F-A10: prune ancient daily logs so multi-month users don't
-        // accumulate dozens of MB of NMH transcripts.
         PruneOldFiles();
     }
 
@@ -32,20 +31,12 @@ internal static class Logger
     private static void Write(string level, string message, Exception? ex)
     {
         var line = $"{DateTime.Now:O} [{level}] {message}";
-        if (ex is not null)
-        {
-            line += Environment.NewLine + ex;
-        }
+        if (ex is not null) line += Environment.NewLine + ex;
 
-        // stderr is safe — Chrome only reads stdout for message framing.
-        try
-        {
-            Console.Error.WriteLine(line);
-        }
-        catch
-        {
-            // best-effort
-        }
+        // Debug build: also write to debug output.
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine(line);
+#endif
 
         if (_path is null) return;
 
@@ -71,16 +62,11 @@ internal static class Logger
             var info = new FileInfo(_path);
             if (!info.Exists) return;
             if (info.Length < PerFileMaxBytes) return;
-
-            // Roll: foo.log -> foo.log.1 (overwrite any previous .1).
             var rolled = _path + ".1";
             if (File.Exists(rolled)) File.Delete(rolled);
             File.Move(_path, rolled);
         }
-        catch
-        {
-            // best-effort
-        }
+        catch { }
     }
 
     private static void PruneOldFiles()
@@ -90,24 +76,17 @@ internal static class Logger
         {
             var dir = Path.GetDirectoryName(_path);
             if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
-
             var cutoff = DateTime.UtcNow.AddDays(-RetainDays);
-            foreach (var file in Directory.EnumerateFiles(dir, "nmh-*.log*"))
+            foreach (var file in Directory.EnumerateFiles(dir, "widget-*.log*"))
             {
                 try
                 {
                     var ts = File.GetLastWriteTimeUtc(file);
                     if (ts < cutoff) File.Delete(file);
                 }
-                catch
-                {
-                    // skip individual file failures
-                }
+                catch { }
             }
         }
-        catch
-        {
-            // best-effort
-        }
+        catch { }
     }
 }

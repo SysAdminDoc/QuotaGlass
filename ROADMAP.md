@@ -99,12 +99,12 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 - [x] **N-17** — `installer/quotaglass.iss` per-user install to `%LOCALAPPDATA%\Programs\QuotaGlass\`, registers NMH, drops AUMID-bearing Start Menu shortcut, optional autostart task, runs `--unregister` on uninstall, multi-arch via `/DAppArch=x64|arm64`.
 - [x] **N-18** — `.github/workflows/release.yml` `workflow_dispatch` w/ `version` input, matrix on `[x64, arm64]`, publishes single-file framework-dependent EXEs, builds Inno installer, uploads to GH Release.
 
-### Batch 9 — Logging + observability
+### Batch 9 — Logging + observability ✅
 
-- [ ] **F-A10** — Log rotation: delete `nmh-{date}.log` older than 14 days; size-cap individual files at 10 MB.
-- [ ] **R-Rec-02** — `--purge` NMH flag wipes `%LOCALAPPDATA%\QuotaGlass\*`.
-- [ ] **R-Log-03** — `Services/WidgetLogger.cs` mirroring NMH logger pattern; daily file rotation.
-- [ ] **R-Log-02** — 4-char correlation ID per inbound NMH frame; propagate into snapshot.json `lastRequestId`.
+- [x] **F-A10** — `Logger.RotateIfNeeded` rolls when current file exceeds 10 MB; `PruneOldFiles` deletes files older than 14 days on `Init`.
+- [x] **R-Rec-02** — `QuotaGlass.NMH.exe --purge` wipes `%LOCALAPPDATA%\QuotaGlass\` (folder retained, contents deleted).
+- [x] **R-Log-03** — `Services/WidgetLogger.cs` mirrors NMH logger (10 MB cap, 14-day retention, daily file); wired from `App.OnStartup`; captures `DispatcherUnhandledException`.
+- [ ] **R-Log-02** — Correlation IDs — deferred to v0.2. Current logging keys to caller-origin + bucket counts; correlation ID adds value only once we have multi-extension fan-in.
 
 ### Batch 10 — Tests + final docs
 
