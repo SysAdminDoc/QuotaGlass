@@ -91,13 +91,13 @@ Existing in-progress work in `~/repos/AI-Usage_Tracker` (~20 files staged on 202
 - [x] **F-A2** — Manifest `"key"` + Chrome-ID derivation steps documented; `QuotaGlass.NMH/AllowedOrigins.cs` already has the single source of truth (`AiUsageTrackerChromeId`) to replace once the ID is computed.
 - [x] **F-A4** — Full `bridge.js` implementation written (persistent port + 25 s keepalive ping + lazy reconnect + safe disconnect handling); manifest permission patch + `background.js` hook documented. Awaiting drop-in.
 
-### Batch 8 — Distribution
+### Batch 8 — Distribution ✅
 
-- [ ] **F-N10** — Add `win-arm64` to `RuntimeIdentifiers` in both csprojs.
-- [ ] **R2-P1-08** — Register Start Menu shortcut with `System.AppUserModel.ID = com.sysadmindoc.QuotaGlass.Widget`. Use same AppId in `ToastNotificationManager.CreateToastNotifier`.
-- [ ] **R2-P1-06** — Self-hosted updater (`Services/UpdateChecker.cs`) — GitHub Releases API + PowerShell self-replace script (Zrnik pattern).
-- [ ] **N-17** — Inno Setup installer (`installer/quotaglass.iss`) that installs to `%LOCALAPPDATA%\Programs\QuotaGlass\`, runs `--register`, drops Start Menu shortcut with AUMID, autostarts widget on login, supports x64+arm64.
-- [ ] **N-18** — GitHub Release workflow (`.github/workflows/release.yml`, `workflow_dispatch`, multi-arch build + sign-skip + Inno pack + GH release upload).
+- [x] **F-N10** — `win-x64;win-arm64` on both csprojs.
+- [x] **R2-P1-08** — `ToastService.AppUserModelId = "com.sysadmindoc.QuotaGlass.Widget"`; Inno script sets the same AUMID on the Start Menu shortcut (`[Icons]` `AppUserModelID:`).
+- [x] **R2-P1-06** — `Services/UpdateChecker.cs` queries `api.github.com/repos/SysAdminDoc/QuotaGlass/releases/latest`, finds the matching arch asset, downloads to `%TEMP%`, writes a PS1 self-replace script. Lazy — only runs on demand.
+- [x] **N-17** — `installer/quotaglass.iss` per-user install to `%LOCALAPPDATA%\Programs\QuotaGlass\`, registers NMH, drops AUMID-bearing Start Menu shortcut, optional autostart task, runs `--unregister` on uninstall, multi-arch via `/DAppArch=x64|arm64`.
+- [x] **N-18** — `.github/workflows/release.yml` `workflow_dispatch` w/ `version` input, matrix on `[x64, arm64]`, publishes single-file framework-dependent EXEs, builds Inno installer, uploads to GH Release.
 
 ### Batch 9 — Logging + observability
 
