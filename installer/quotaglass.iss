@@ -23,7 +23,7 @@
 #define MyAppUserModelId "com.sysadmindoc.QuotaGlass.Widget"
 ; L-04 / R4-N2 / R5-P1-03 - stable CLSID of the ToastActivator COM class.
 ; Must match src/QuotaGlass.Widget/Services/ToastActivator.cs#Clsid exactly.
-#define MyToastActivatorClsid "{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"
+#define MyToastActivatorClsid "{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"
 
 [Setup]
 AppId={{4F1B3F6E-2D8C-4E83-9C12-9B0B17F8D2A1}
