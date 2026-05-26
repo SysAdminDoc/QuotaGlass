@@ -22,8 +22,11 @@
 #define MyAppExeName "QuotaGlass.Widget.exe"
 #define MyAppUserModelId "com.sysadmindoc.QuotaGlass.Widget"
 ; L-04 / R4-N2 / R5-P1-03 - stable CLSID of the ToastActivator COM class.
-; Must match src/QuotaGlass.Widget/Services/ToastActivator.cs#Clsid exactly.
-#define MyToastActivatorClsid "{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"
+; Hardcoded as a literal below (not a #define) because Inno expands constants
+; inside [Icons] / [Registry] quoted values, so the opening brace must be
+; doubled with `{{` to escape - which a #define value can't carry safely
+; through `{#name}` substitution. Source of truth lives in
+; src/QuotaGlass.Widget/Services/ToastActivator.cs#Clsid - keep these in sync.
 
 [Setup]
 AppId={{4F1B3F6E-2D8C-4E83-9C12-9B0B17F8D2A1}
@@ -68,7 +71,7 @@ Source: "payload\{#AppArch}\*"; DestDir: "{app}"; Flags: ignoreversion recursesu
 ; clicked action buttons route through it.
 Name: "{commonprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
   AppUserModelID: "{#MyAppUserModelId}"; \
-  AppUserModelToastActivatorCLSID: "{#MyToastActivatorClsid}"
+  AppUserModelToastActivatorCLSID: "{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"
 
 [Run]
 ; Register native messaging host (write HKCU registry keys for Chrome,
@@ -92,10 +95,10 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
 ; action buttons in Action Center back to the widget EXE (the running
 ; instance via CoRegisterClassObject when alive, otherwise a cold launch
 ; with --toast-activator).
-Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastActivatorClsid}"; \
+Root: HKCU; Subkey: "Software\Classes\CLSID\{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"; \
   ValueType: string; ValueName: ""; ValueData: "QuotaGlass Toast Activator"; \
   Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastActivatorClsid}\LocalServer32"; \
+Root: HKCU; Subkey: "Software\Classes\CLSID\{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}\LocalServer32"; \
   ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" --toast-activator"; \
   Flags: uninsdeletekey
 
