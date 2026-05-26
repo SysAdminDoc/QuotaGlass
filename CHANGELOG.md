@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-05-25
+
+Pass 6 hardening release. MainWindow code-behind split into TrayCoordinator / UpdatePrompt / BucketContextMenuService helpers, U3/R3 double-toast ordering fixed, diagnostics redaction made recursive, snapshot merge now preserves schema v2 history + schema v3 multi-account fields, multi-account alarms wired, toast action arg encoding hardened, self-updater asset matcher tightened, plus premium UI polish across cards/pills/fields/scrollbars. Verified locally with .NET SDK 9.0.314: 101 tests passing.
+
 ### Added
 
 - **R5-N1** - Setup card literals now flow through `Resources/Strings.cs` via `x:Static`, proving the localization scaffold works from XAML before the full RESX migration.
