@@ -71,7 +71,7 @@ Source: "payload\{#AppArch}\*"; DestDir: "{app}"; Flags: ignoreversion recursesu
 ; clicked action buttons route through it.
 Name: "{commonprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
   AppUserModelID: "{#MyAppUserModelId}"; \
-  AppUserModelToastActivatorCLSID: "{{4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE}"
+  AppUserModelToastActivatorCLSID: "4F3CDEA3-8CB0-4C7F-8243-7ACA5F8B77CE"
 
 [Run]
 ; Register native messaging host (write HKCU registry keys for Chrome,
