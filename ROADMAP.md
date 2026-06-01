@@ -1,23 +1,27 @@
 # Roadmap - pending work only
 
-**Last updated:** 2026-05-25
-**Current baseline:** v0.9.0 plus Unreleased v0.10 hardening work on `main`.
-**Verification baseline:** `dotnet test QuotaGlass.sln --no-restore` passes with .NET SDK 9.0.314: 101 passed, 0 failed.
+**Last updated:** 2026-06-01
+**Current baseline:** v0.10.0 plus installer CLSID fixes on `main`.
+**Last recorded verification:** `dotnet test QuotaGlass.sln --no-restore` with .NET SDK 9.0.314: 101 passed, 0 failed.
 
-This file is the executable TODO. Completed items live in [CHANGELOG.md](CHANGELOG.md) by release and are intentionally not duplicated here. Background evidence lives in the research dossiers:
+This file is the executable TODO. Completed items live in [COMPLETED.md](COMPLETED.md) and [CHANGELOG.md](CHANGELOG.md). Research synthesis lives in [RESEARCH_REPORT.md](RESEARCH_REPORT.md); historical audit dossiers are archived under `docs/archive/research/`.
 
-- [RESEARCH_FEATURE_PLAN.md](RESEARCH_FEATURE_PLAN.md) - Pass 1 audit.
-- [RESEARCH_PASS_2.md](RESEARCH_PASS_2.md) - Pass 2 audit.
-- [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) - post-v0.1.0 audit.
-- [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md) - post-v0.4.0 audit.
-- [RESEARCH_PASS_5.md](RESEARCH_PASS_5.md) - post-v0.8.0 audit and v0.9/v0.10 queue.
-- [RESEARCH_PASS_6.md](RESEARCH_PASS_6.md) - production hardening audit: diagnostics, schema merge, alarms, updater, tray, settings, docs, release workflow.
-- [RESEARCH_PASS_7.md](RESEARCH_PASS_7.md) - premium UI/UX polish audit: component system, hierarchy, setup/settings copy, scrollers, empty states, focus/hover treatment.
-- [docs/research.md](docs/research.md) - original scaffold dossier.
+## Reference Docs
+
+- [COMPLETED.md](COMPLETED.md) - shipped baseline by feature area.
+- [RESEARCH_REPORT.md](RESEARCH_REPORT.md) - current research synthesis and decisions.
+- [docs/archive/research/RESEARCH_FEATURE_PLAN.md](docs/archive/research/RESEARCH_FEATURE_PLAN.md) - Pass 1 audit.
+- [docs/archive/research/RESEARCH_PASS_2.md](docs/archive/research/RESEARCH_PASS_2.md) - Pass 2 audit.
+- [docs/archive/research/RESEARCH_PASS_3.md](docs/archive/research/RESEARCH_PASS_3.md) - post-v0.1.0 audit.
+- [docs/archive/research/RESEARCH_PASS_4.md](docs/archive/research/RESEARCH_PASS_4.md) - post-v0.4.0 audit.
+- [docs/archive/research/RESEARCH_PASS_5.md](docs/archive/research/RESEARCH_PASS_5.md) - post-v0.8.0 audit and v0.9/v0.10 queue.
+- [docs/archive/research/RESEARCH_PASS_6.md](docs/archive/research/RESEARCH_PASS_6.md) - production hardening audit.
+- [docs/archive/research/RESEARCH_PASS_7.md](docs/archive/research/RESEARCH_PASS_7.md) - premium UI/UX polish audit.
+- [docs/archive/research/research.md](docs/archive/research/research.md) - original scaffold dossier.
 - [docs/extension-integration.md](docs/extension-integration.md) - wire schema spec.
 - [docs/bridge-integration.md](docs/bridge-integration.md) - extension-side drop-in code.
 
-Resolved decisions are captured in [CHANGELOG.md](CHANGELOG.md): self-hosted updater, AUMID, Win10 1809 minimum, unsigned binaries, no telemetry, no MSIX, no Tauri/Rainmeter/Avalonia pivot for the current product.
+Resolved decisions are summarized in [RESEARCH_REPORT.md](RESEARCH_REPORT.md) and captured historically in [CHANGELOG.md](CHANGELOG.md): self-hosted updater, AUMID, Win10 1809 minimum, unsigned binaries, no telemetry, no MSIX, no Tauri/Rainmeter/Avalonia pivot for the current product.
 
 ---
 
@@ -31,7 +35,7 @@ Blocked items do not stop autonomous execution when unblocked tasks exist.
 
 ---
 
-## Phase 9 - deferred product bets
+## Phase 9 - Deferred Product Bets
 
 - [ ] **P3 - L-10 provider plugin contract.** Deferred until a real second-provider use case exists.
 - [ ] **R-Log-02 - Correlation IDs across NMH and Widget.** Adds value once multi-extension fan-in or multi-NMH sessions exist.
@@ -43,4 +47,4 @@ Blocked items do not stop autonomous execution when unblocked tasks exist.
 
 ## Next Autonomous Pick
 
-No unblocked local implementation tasks remain after Pass 6. Resume with **R5-P0-02** when a real Claude Code OAuth environment is available, or promote one deferred product bet above if demand changes.
+No unblocked local implementation tasks remain after Pass 6 and Pass 7. Resume with **R5-P0-02** when a real Claude Code OAuth environment is available, or promote one deferred product bet above if demand changes.

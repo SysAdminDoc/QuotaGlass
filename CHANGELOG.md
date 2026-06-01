@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Consolidated root planning docs into `ROADMAP.md`, `COMPLETED.md`, and `RESEARCH_REPORT.md`; archived historical research passes under `docs/archive/research/`.
+
 ## [0.10.0] — 2026-05-25
 
 Pass 6 hardening release. MainWindow code-behind split into TrayCoordinator / UpdatePrompt / BucketContextMenuService helpers, U3/R3 double-toast ordering fixed, diagnostics redaction made recursive, snapshot merge now preserves schema v2 history + schema v3 multi-account fields, multi-account alarms wired, toast action arg encoding hardened, self-updater asset matcher tightened, plus premium UI polish across cards/pills/fields/scrollbars. Verified locally with .NET SDK 9.0.314: 101 tests passing.
@@ -48,7 +52,7 @@ Pass 5 audit + fast-follow fixes. Three Pass 5 P0 findings landed plus the test 
 
 ### Added
 
-- **RESEARCH_PASS_5.md** — post-v0.8 audit dossier. Three P0 bugs surfaced (diagnostics zip incomplete, HitButton style scope, OAuth refresh endpoint unverified) plus 6 v0.9/v0.10 items.
+- **[RESEARCH_PASS_5.md](docs/archive/research/RESEARCH_PASS_5.md)** — post-v0.8 audit dossier. Three P0 bugs surfaced (diagnostics zip incomplete, HitButton style scope, OAuth refresh endpoint unverified) plus 6 v0.9/v0.10 items.
 - **SetupCardView UserControl** — third extraction from MainWindow.xaml in the v0.8→v0.9 refactor. Install / Run-register / Help / Dismiss-24h buttons now live with the panel. ([Views/SetupCardView.xaml](src/QuotaGlass.Widget/Views/SetupCardView.xaml))
 - **SnapshotWatcher.Merge unit tests** — 5 new method-level facts lock the multi-source merge contract (R4-P1-02): newest envelope wins, OK provider wins on tie, fallback when primary failed. ([test/QuotaGlass.Tests/SnapshotWatcherMergeTests.cs](test/QuotaGlass.Tests/SnapshotWatcherMergeTests.cs))
 
@@ -119,7 +123,7 @@ Multi-account + accessibility + low-latency transport release. Closes the remain
 
 ## [0.6.0] — 2026-05-25
 
-Toast actions + schema v2. Closes [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md)'s v0.6 batch (R4-N2 / R4-N3 / R4-N7) plus the carry-forward test coverage gaps. Snooze and Open Analytics buttons now appear inside every bucket toast; sparklines render on fresh installs because the extension can bundle 24-sample history in the snapshot envelope.
+Toast actions + schema v2. Closes [RESEARCH_PASS_4.md](docs/archive/research/RESEARCH_PASS_4.md)'s v0.6 batch (R4-N2 / R4-N3 / R4-N7) plus the carry-forward test coverage gaps. Snooze and Open Analytics buttons now appear inside every bucket toast; sparklines render on fresh installs because the extension can bundle 24-sample history in the snapshot envelope.
 
 ### Added
 
@@ -154,7 +158,7 @@ Toast actions + schema v2. Closes [RESEARCH_PASS_4.md](RESEARCH_PASS_4.md)'s v0.
 
 ## [0.5.0] — 2026-05-25
 
-Stabilization release. Closes every P0 / P1 bug Pass 4 ([RESEARCH_PASS_4.md](RESEARCH_PASS_4.md)) found in the v0.1.1..v0.4.0 work, plus 9 quick wins. F-N1 now targets the right endpoints and rotates OAuth tokens; the snapshot pipeline tolerates two producers without flicker; Mica survives a theme switch.
+Stabilization release. Closes every P0 / P1 bug Pass 4 ([RESEARCH_PASS_4.md](docs/archive/research/RESEARCH_PASS_4.md)) found in the v0.1.1..v0.4.0 work, plus 9 quick wins. F-N1 now targets the right endpoints and rotates OAuth tokens; the snapshot pipeline tolerates two producers without flicker; Mica survives a theme switch.
 
 ### Fixed
 
@@ -303,7 +307,7 @@ Polish + first-true-differentiator release. Closes a large chunk of Pass 3's v0.
 
 ## [0.1.1] — 2026-05-25
 
-Bug-fix point release surfaced by [RESEARCH_PASS_3.md](RESEARCH_PASS_3.md) post-ship audit of v0.1.0.
+Bug-fix point release surfaced by [RESEARCH_PASS_3.md](docs/archive/research/RESEARCH_PASS_3.md) post-ship audit of v0.1.0.
 
 ### Fixed
 

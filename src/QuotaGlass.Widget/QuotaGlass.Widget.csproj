@@ -23,7 +23,7 @@
     System.Drawing.Common 4.7.0 (GHSA-rxg9-xrhp-64gj) transitively and
     offered no capability beyond raw Windows.UI.Notifications, which is
     already available via the net9.0-windows10.0.19041.0 TFM. See
-    RESEARCH_PASS_2.md §3.1 and Services/ToastService.cs.
+    docs/archive/research/RESEARCH_PASS_2.md section 3.1 and Services/ToastService.cs.
   -->
 
   <ItemGroup>

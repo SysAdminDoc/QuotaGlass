@@ -46,7 +46,7 @@ QuotaGlass.NMH.exe --purge
 - No external NuGet packages without a written reason. QuotaGlass deliberately
   avoids `Microsoft.Toolkit.Uwp.Notifications`, `MaterialDesignThemes`,
   `H.NotifyIcon.Wpf`, etc. Each one we'd add costs CVE surface, install size,
-  and AOT-compatibility risk. See [docs/research.md](docs/research.md) §4.
+  and AOT-compatibility risk. See [RESEARCH_REPORT.md](RESEARCH_REPORT.md).
 - WPF/WinForms type collisions: add explicit `using Brush = …` aliases at
   the top of any file that touches both (already a known gotcha in
   `RadialRing.cs`, `App.xaml.cs`, `TrayIconService.cs`).

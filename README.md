@@ -1,6 +1,6 @@
 # QuotaGlass
 
-[![Version](https://img.shields.io/badge/version-0.9.0-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
+[![Version](https://img.shields.io/badge/version-0.10.0-blue.svg)](https://github.com/SysAdminDoc/QuotaGlass/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6.svg)](#install)
 [![Stack](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](#build-from-source)
@@ -109,9 +109,16 @@ dotnet test QuotaGlass.sln -c Release
 
 101 tests across the shared persistence/schema layer, NMH credential and diagnostics paths, widget snapshot merging, alarm scheduling, updater guards, toast-action parsing, and view-model regressions.
 
+## Project planning
+
+- [Roadmap](ROADMAP.md)
+- [Completed work](COMPLETED.md)
+- [Research report](RESEARCH_REPORT.md)
+- [Archived research passes](docs/archive/research/)
+
 ## OSS landscape & why this exists
 
-See [docs/research.md](docs/research.md) for the full survey. TL;DR:
+See [RESEARCH_REPORT.md](RESEARCH_REPORT.md) for the current survey summary and `docs/archive/research/` for historical evidence. TL;DR:
 
 | Option | Why it's not the fit |
 |---|---|
