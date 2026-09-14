@@ -5,6 +5,16 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-0078D6.svg)](#install)
 [![Stack](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](#build-from-source)
 
+<p align="center">
+  <a href="https://ko-fi.com/X8K126YVER">
+    <img height="42" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Buy me a coffee on Ko-fi" />
+  </a>
+</p>
+
+<p align="center">
+  <sub><em>If this project helps you, a coffee helps me keep working on it.</em></sub>
+</p>
+
 > **Always-visible Claude + Codex usage on your Windows desktop.** Draggable glass widget, radial-ring countdowns, custom-sound notifications, and a configurable alarm ladder (24 h / 12 h / 6 h / 3 h / 1 h / 30 m / 15 m / 5 m) so you know the moment your weekly quota renews.
 
 QuotaGlass is the **desktop companion** to the [AI-Usage_Tracker](https://github.com/SysAdminDoc/AI-Usage_Tracker) browser extension. The extension already handles the authenticated API path against `claude.ai` and `chatgpt.com`. QuotaGlass surfaces that data on your desktop as a floating widget with OS-native toasts, so you don't have to keep a tab open or pin the popup.
